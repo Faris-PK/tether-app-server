@@ -18,8 +18,8 @@ const googleAuthController = new GoogleAuthController(userRepository);
 // Define routes
 authRouter.post('/register', (req, res) => authController.register(req, res));
 authRouter.post('/verify-otp', (req, res) => authController.verifyOTP(req, res));
+authRouter.post('/resend-otp', (req, res) => authController.resendOTP(req, res));
 authRouter.post('/login', (req, res) => authController.login(req, res));
-authRouter.post('/refresh-token', (req, res) => authController.refreshToken(req, res));
 authRouter.post('/logout', (req, res) => authController.logout(req, res));
 authRouter.post('/google', (req, res) => googleAuthController.googleLogin(req, res));
 

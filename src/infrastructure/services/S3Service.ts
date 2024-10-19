@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -16,10 +16,10 @@ export class S3Service {
     });
   }
 
-  async uploadFile(file: Express.Multer.File) {
+  async uploadFile(file: Express.Multer.File, folder: string = '') {
     const params = {
       Bucket: process.env.S3_BUCKET_NAME!,
-      Key: `${Date.now()}-${file.originalname}`,
+      Key: `${folder}/${Date.now()}-${file.originalname}`,
       Body: file.buffer,
       ContentType: file.mimetype,
     };
@@ -31,5 +31,16 @@ export class S3Service {
       ...data,
       Location: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${params.Key}`,
     };
+  }
+
+  async deleteFile(fileUrl: string) {
+    const key = fileUrl.split('.com/')[1];
+    const params = {
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: key,
+    };
+
+    const command = new DeleteObjectCommand(params);
+    await this.s3Client.send(command);
   }
 }

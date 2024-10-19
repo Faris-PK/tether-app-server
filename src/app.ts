@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan'
 import adminRoutes from './presentation/routes/AdminRoute';
 import userRouter from './presentation/routes/UserRoute';
+import postRoutes from './presentation/routes/PostRoutes';
 dotenv.config();
 
 const app = express();
@@ -23,7 +24,8 @@ app.use(morgan('dev'))
 
 app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes );
-app.use('/user',userRouter)
+app.use('/user',userRouter);
+app.use('/posts', postRoutes);
 
 const PORT = process.env.PORT || 5000;
 

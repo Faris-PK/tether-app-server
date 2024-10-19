@@ -39,9 +39,10 @@ export class UserController {
     async updateProfile(req: Request, res: Response) {
         try {
             const userId = req.userId;
-            console.log('userId from controller : ', userId);
+            
 
            const updatedData = req.body;
+           console.log('updatedData : ', updatedData);
            const UpdateUser = await this.updateUserProfileUseCase.execute(userId??'', updatedData);
            return res.status(200).json(updatedData)
         } catch (error) {

@@ -3,6 +3,7 @@ import { RegisterUserUseCase } from '../../application/useCases/user/RegisterUse
 import { VerifyOTPUseCase } from '../../application/useCases/user/VerifyOTPUseCase';
 import { LoginUserUseCase } from '../../application/useCases/user/LoginUserUseCase';
 import { RefreshTokenUseCase } from '../../application/useCases/user/RefreshTokenUseCase';
+import { ResendOTPUseCase } from '../../application/useCases/user/ResendOTPUseCase';
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { OTPRepository } from '../../infrastructure/repositories/OTPRepository';
 import { MailService } from '../../infrastructure/mail/MailService';
@@ -10,8 +11,9 @@ import { MailService } from '../../infrastructure/mail/MailService';
 export class AuthController {
   private registerUserUseCase: RegisterUserUseCase;
   private verifyOTPUseCase: VerifyOTPUseCase;
-  private loginUserUseCase: LoginUserUseCase; 
+  private loginUserUseCase: LoginUserUseCase;
   private refreshTokenUseCase: RefreshTokenUseCase;
+  private resendOTPUseCase: ResendOTPUseCase;
 
   constructor(
     private userRepository: UserRepository,
@@ -22,12 +24,12 @@ export class AuthController {
     this.verifyOTPUseCase = new VerifyOTPUseCase(otpRepository);
     this.loginUserUseCase = new LoginUserUseCase(userRepository);
     this.refreshTokenUseCase = new RefreshTokenUseCase(userRepository);
+    this.resendOTPUseCase = new ResendOTPUseCase(otpRepository, mailService);
   }
-
   async register(req: Request, res: Response) {
     try {
       const userData = req.body;
-      console.log('userData : ',userData);
+    //  console.log('userData : ',userData);
       
       await this.registerUserUseCase.execute(userData);
       return res.status(201).json({ message: 'User registered and OTP sent' });
@@ -49,6 +51,19 @@ export class AuthController {
     } catch (error) {
       if (error instanceof Error) {
         return res.status(500).json({ message: error.message });
+      }
+    }
+  }
+
+
+  async resendOTP(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+      await this.resendOTPUseCase.execute(email);
+      return res.status(200).json({ message: 'New OTP sent successfully' });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
       }
     }
   }
