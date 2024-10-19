@@ -31,6 +31,8 @@ export class DeletePostUseCase {
 
     // Remove the post ID from the user's posts array
     const user = await this.userRepository.findById(userId);
+    console.log('user for deleting the post: ',user);
+    
     if (user) {
       user.posts = user.posts.filter((id) => id.toString() !== postId);
       await this.userRepository.save(user);

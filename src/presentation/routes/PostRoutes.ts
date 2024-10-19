@@ -17,5 +17,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 postRouter.post('/create', authMiddleware, checkUserBlockedMiddleware, upload.single('file'), (req, res) => postController.createPost(req, res));
 postRouter.get('/', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.getPosts(req, res));
 postRouter.delete('/delete/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.deletePost(req, res));
+postRouter.put('/update/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.updatePost(req, res));
 
 export default postRouter;

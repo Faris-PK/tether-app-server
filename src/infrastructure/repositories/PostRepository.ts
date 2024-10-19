@@ -20,6 +20,9 @@ export class PostRepository implements IPostRepository {
       .lean();
   }
 
+  async update(id: string, postData: Partial<IPost>): Promise<IPost | null> {
+    return await Post.findByIdAndUpdate(id, postData, { new: true });
+  }
 
   async delete(id: string): Promise<void> {
     await Post.findByIdAndDelete(id);

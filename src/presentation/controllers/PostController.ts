@@ -5,10 +5,11 @@ import { PostRepository } from '../../infrastructure/repositories/PostRepository
 import { S3Service } from '../../infrastructure/services/S3Service';
 import { CreatePostDTO } from '../../application/dto/CreatePostDTO';
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
-
+import { UpdatePostUseCase } from '../../application/useCases/post/UpdatePostUseCase';
 export class PostController {
   private createPostUseCase: CreatePostUseCase;
   private deletePostUseCase: DeletePostUseCase;
+  private updatePostUseCase: UpdatePostUseCase;
 
   constructor(
     private postRepository: PostRepository,
@@ -18,6 +19,7 @@ export class PostController {
   ) {
     this.createPostUseCase = new CreatePostUseCase(postRepository, s3Service);
     this.deletePostUseCase = new DeletePostUseCase(postRepository, s3Service, userRepository);
+    this.updatePostUseCase = new UpdatePostUseCase(postRepository);
   }
 
   async createPost(req: Request, res: Response) {
@@ -77,8 +79,28 @@ export class PostController {
       }
 
       await this.deletePostUseCase.execute(postId, userId);
-      
+     // console.log('What happend here');  
       return res.status(200).json({ message: 'Post deleted successfully' });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async updatePost(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const postId = req.params.id;
+      const { caption, location } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      const updatedPost = await this.updatePostUseCase.execute(postId, userId, { caption, location });
+      
+      return res.status(200).json(updatedPost);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
