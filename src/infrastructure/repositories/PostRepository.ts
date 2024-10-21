@@ -1,3 +1,4 @@
+import { Types } from 'mongoose';
 import { Post, IPost } from '../../domain/entities/Post';
 import { IPostRepository } from '../../domain/interfaces/IPostRepository';
 
@@ -26,5 +27,26 @@ export class PostRepository implements IPostRepository {
 
   async delete(id: string): Promise<void> {
     await Post.findByIdAndDelete(id);
+  }
+
+  async likePost(postId: string, userId: string): Promise<IPost | null> {
+    return await Post.findByIdAndUpdate(
+      postId,
+      { $addToSet: { likes: userId } },
+      { new: true }
+    );
+  }
+
+  async unlikePost(postId: string, userId: string): Promise<IPost | null> {
+    return await Post.findByIdAndUpdate(
+      postId,
+      { $pull: { likes: userId } },
+      { new: true }
+    );
+  }
+
+  async isLikedByUser(postId: string, userId: string): Promise<boolean> {
+    const post = await Post.findById(postId);
+    return post ? post.likes.includes(new Types.ObjectId(userId)) : false;
   }
 }

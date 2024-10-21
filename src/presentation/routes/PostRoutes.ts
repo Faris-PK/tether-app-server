@@ -18,5 +18,6 @@ postRouter.post('/create', authMiddleware, checkUserBlockedMiddleware, upload.si
 postRouter.get('/', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.getPosts(req, res));
 postRouter.delete('/delete/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.deletePost(req, res));
 postRouter.put('/update/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.updatePost(req, res));
+postRouter.post('/like/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.likePost(req, res));
 
 export default postRouter;

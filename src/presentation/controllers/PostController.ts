@@ -5,11 +5,13 @@ import { PostRepository } from '../../infrastructure/repositories/PostRepository
 import { S3Service } from '../../infrastructure/services/S3Service';
 import { CreatePostDTO } from '../../application/dto/CreatePostDTO';
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
+import { LikePostUseCase } from '../../application/useCases/post/LikePostUseCase';
 import { UpdatePostUseCase } from '../../application/useCases/post/UpdatePostUseCase';
 export class PostController {
   private createPostUseCase: CreatePostUseCase;
   private deletePostUseCase: DeletePostUseCase;
   private updatePostUseCase: UpdatePostUseCase;
+  private likePostUseCase: LikePostUseCase;
 
   constructor(
     private postRepository: PostRepository,
@@ -20,6 +22,7 @@ export class PostController {
     this.createPostUseCase = new CreatePostUseCase(postRepository, s3Service);
     this.deletePostUseCase = new DeletePostUseCase(postRepository, s3Service, userRepository);
     this.updatePostUseCase = new UpdatePostUseCase(postRepository);
+    this.likePostUseCase = new LikePostUseCase(postRepository);
   }
 
   async createPost(req: Request, res: Response) {
@@ -100,6 +103,24 @@ export class PostController {
 
       const updatedPost = await this.updatePostUseCase.execute(postId, userId, { caption, location });
       
+      return res.status(200).json(updatedPost);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async likePost(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const postId = req.params.id;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      const updatedPost = await this.likePostUseCase.execute(postId, userId);
       return res.status(200).json(updatedPost);
     } catch (error) {
       if (error instanceof Error) {
