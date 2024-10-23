@@ -15,7 +15,8 @@ const postController = new PostController(postRepository, s3Service, userReposit
 const upload = multer({ storage: multer.memoryStorage() });
 
 postRouter.post('/create', authMiddleware, checkUserBlockedMiddleware, upload.single('file'), (req, res) => postController.createPost(req, res));
-postRouter.get('/', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.getPosts(req, res));
+postRouter.get('/', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.getPostsForHome(req, res));
+postRouter.get('/profile', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.getPostsForProfile(req, res));
 postRouter.delete('/delete/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.deletePost(req, res));
 postRouter.put('/update/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.updatePost(req, res));
 postRouter.post('/like/:id', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.likePost(req, res));
