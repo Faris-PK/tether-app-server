@@ -89,6 +89,27 @@ export class PostRepository implements IPostRepository {
     .lean();
   }
 
-  
+  async findAllPosts(): Promise<any[]> {
+    return await Post.find()
+      .populate('userId', 'username profile_picture')
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
+  async blockPost(postId: string): Promise<IPost | null> {
+    return await Post.findByIdAndUpdate(
+      postId,
+      { isBlocked: true },
+      { new: true }
+    );
+  }
+
+  async unblockPost(postId: string): Promise<IPost | null> {
+    return await Post.findByIdAndUpdate(
+      postId,
+      { isBlocked: false },
+      { new: true }
+    );
+  }
 
 }

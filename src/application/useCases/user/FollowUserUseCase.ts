@@ -14,7 +14,8 @@ export class FollowUserUseCase {
       this.userRepository.findById(followerId),
       this.userRepository.findById(targetUserId)
     ]);
-
+    // console.log('follower :',follower);
+    // console.log('targetUser :',targetUser);
     if (!follower || !targetUser) {
       throw new Error('User not found');
     }

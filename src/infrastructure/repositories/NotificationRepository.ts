@@ -15,6 +15,11 @@ export class NotificationRepository {
       .populate('sender', 'username profile_picture');
   }
 
+  async markAsRead(notificationId: string): Promise<void> {
+    const objectId = new Types.ObjectId(notificationId);
+    await Notification.findByIdAndUpdate(objectId, { read: true });
+  }
+
   async deleteNotification(notificationId: string): Promise<void> {
     const objectId = new Types.ObjectId(notificationId);
     await Notification.findByIdAndDelete(objectId);

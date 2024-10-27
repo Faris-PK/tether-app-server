@@ -7,22 +7,29 @@ import { CreatePostDTO } from '../../application/dto/CreatePostDTO';
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { LikePostUseCase } from '../../application/useCases/post/LikePostUseCase';
 import { UpdatePostUseCase } from '../../application/useCases/post/UpdatePostUseCase';
+import { ReportPostUseCase } from '../../application/useCases/post/ReportPostUseCase';
+import { ReportRepository } from '../../infrastructure/repositories/ReportRepository';
+
+
+
 export class PostController {
   private createPostUseCase: CreatePostUseCase;
   private deletePostUseCase: DeletePostUseCase;
   private updatePostUseCase: UpdatePostUseCase;
   private likePostUseCase: LikePostUseCase;
+  private reportPostUseCase: ReportPostUseCase;
 
   constructor(
     private postRepository: PostRepository,
     private s3Service: S3Service,
-    private userRepository: UserRepository
-
+    private userRepository: UserRepository,
+    private reportRepository: ReportRepository
   ) {
     this.createPostUseCase = new CreatePostUseCase(postRepository, s3Service);
     this.deletePostUseCase = new DeletePostUseCase(postRepository, s3Service, userRepository);
     this.updatePostUseCase = new UpdatePostUseCase(postRepository);
     this.likePostUseCase = new LikePostUseCase(postRepository);
+    this.reportPostUseCase = new ReportPostUseCase(reportRepository, postRepository);
   }
 
   async createPost(req: Request, res: Response) {
@@ -162,4 +169,31 @@ export class PostController {
       }
     }
   }
-}
+
+  async reportPost(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const postId = req.params.id;
+      const { reason } = req.body;
+      console.log( 'userId : ', userId);
+      console.log( 'postId : ', postId);
+      console.log( 'reason : ', reason);
+      
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      if (!reason) {
+        return res.status(400).json({ message: 'Reason is required' });
+      }
+
+      const report = await this.reportPostUseCase.execute(postId, userId, reason);
+      return res.status(201).json(report);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+}  

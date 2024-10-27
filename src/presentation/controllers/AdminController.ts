@@ -5,21 +5,41 @@ import { UnblockUserUseCase } from '../../application/useCases/admin/UnblockUser
 import { AdminRepository } from '../../infrastructure/repositories/AdminRepository';
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { GetUsersUseCase } from '../../application/useCases/admin/GetUsersUseCase';
+import { GetPostsUseCase } from '../../application/useCases/admin/GetPostsUseCase';
+import { BlockPostUseCase } from '../../application/useCases/admin/BlockPostUseCase';
+import { UnblockPostUseCase } from '../../application/useCases/admin/UnblockPostUseCase';
+import { PostRepository } from '../../infrastructure/repositories/PostRepository';
+import { GetAllReportsUseCase } from '../../application/useCases/admin/GetAllReportsUseCase';
+import { UpdateReportStatusUseCase } from '../../application/useCases/admin/UpdateReportStatusUseCase';
+import { ReportRepository } from '../../infrastructure/repositories/ReportRepository';
+
 
 export class AdminController {
   private adminLoginUseCase: AdminLoginUseCase;
   private blockUserUseCase: BlockUserUseCase;
   private unblockUserUseCase: UnblockUserUseCase;
   private getUsersUseCase: GetUsersUseCase;
+  private getPostsUseCase: GetPostsUseCase;
+  private blockPostUseCase: BlockPostUseCase;
+  private unblockPostUseCase: UnblockPostUseCase;
+  private getAllReportsUseCase: GetAllReportsUseCase;
+  private updateReportStatusUseCase: UpdateReportStatusUseCase;
 
   constructor(
     private adminRepository: AdminRepository,
-    private userRepository: UserRepository
+    private userRepository: UserRepository,
+    private postRepository: PostRepository,
+    private reportRepository: ReportRepository,
   ) {
     this.adminLoginUseCase = new AdminLoginUseCase(adminRepository);
     this.blockUserUseCase = new BlockUserUseCase(userRepository);
     this.unblockUserUseCase = new UnblockUserUseCase(userRepository);
     this.getUsersUseCase = new GetUsersUseCase(userRepository);
+    this.getPostsUseCase = new GetPostsUseCase(postRepository);
+    this.blockPostUseCase = new BlockPostUseCase(postRepository);
+    this.unblockPostUseCase = new UnblockPostUseCase(postRepository);
+    this.getAllReportsUseCase = new GetAllReportsUseCase(reportRepository);
+    this.updateReportStatusUseCase = new UpdateReportStatusUseCase(reportRepository);
   }
 
   async login(req: Request, res: Response) {
@@ -74,6 +94,70 @@ export class AdminController {
     try {
       const users = await this.getUsersUseCase.execute();
       return res.status(200).json(users);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async getPosts(req: Request, res: Response) {
+    try {
+      const posts = await this.getPostsUseCase.execute();
+      return res.status(200).json(posts);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async blockPost(req: Request, res: Response) {
+    try {
+      const { postId } = req.params;
+      await this.blockPostUseCase.execute(postId);
+      return res.status(200).json({ message: 'Post blocked successfully' });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async unblockPost(req: Request, res: Response) {
+    try {
+      const { postId } = req.params;
+      await this.unblockPostUseCase.execute(postId);
+      return res.status(200).json({ message: 'Post unblocked successfully' });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async getAllReports(req: Request, res: Response) {
+    try {
+      const filter = req.query.filter as string;
+      const reports = await this.getAllReportsUseCase.execute(filter);
+      return res.status(200).json(reports);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(500).json({ message: error.message });
+      }
+    }
+  }
+
+  async updateReportStatus(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      console.log(' from frontend : ', id);
+      console.log("status :", status);
+      
+      
+      const report = await this.updateReportStatusUseCase.execute(id, status);
+      return res.status(200).json(report);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });

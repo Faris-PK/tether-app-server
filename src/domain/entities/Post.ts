@@ -1,4 +1,3 @@
-import { Type } from '@aws-sdk/client-s3';
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export interface IPost extends Document {
@@ -7,8 +6,8 @@ export interface IPost extends Document {
   mediaUrl?: string;
   postType: 'image' | 'video' | 'note';
   location?: string;
-  likes:Types.ObjectId[];
-  
+  likes: Types.ObjectId[];
+  isBlocked: boolean; 
 }
 
 const PostSchema: Schema = new Schema({
@@ -17,7 +16,8 @@ const PostSchema: Schema = new Schema({
   mediaUrl: { type: String },
   postType: { type: String, enum: ['image', 'video', 'note'], required: true },
   location: { type: String },
-  likes:[{ type: Schema.Types.ObjectId, ref: 'User'}],
-},  { timestamps: true });
+  likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  isBlocked: { type: Boolean, default: false }, 
+}, { timestamps: true });
 
 export const Post = mongoose.model<IPost>('Post', PostSchema);
