@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Types } from 'mongoose';
 export interface INotification extends Document {
   recipient: Types.ObjectId;
   sender: Types.ObjectId;
-  type: 'follow_request' | 'follow_accept' | 'unfollow';
+  type: 'follow_request' | 'follow_accept' ;
   content: string;
   read: boolean;
   createdAt: Date;
@@ -12,7 +12,7 @@ export interface INotification extends Document {
 const NotificationSchema: Schema = new Schema({
   recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  type: { type: String, enum: ['follow_request', 'follow_accept', 'unfollow'], required: true },
+  type: { type: String, enum: ['follow_request', 'follow_accept'], required: true },
   content: { type: String, required: true },
   read: { type: Boolean, default: false },
 }, { timestamps: true });

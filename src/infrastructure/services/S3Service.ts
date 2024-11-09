@@ -5,6 +5,7 @@ dotenv.config();
 
 export class S3Service {
   private s3Client: S3Client;
+  upload: any;
 
   constructor() {
     this.s3Client = new S3Client({

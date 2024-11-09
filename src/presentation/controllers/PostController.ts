@@ -9,6 +9,11 @@ import { LikePostUseCase } from '../../application/useCases/post/LikePostUseCase
 import { UpdatePostUseCase } from '../../application/useCases/post/UpdatePostUseCase';
 import { ReportPostUseCase } from '../../application/useCases/post/ReportPostUseCase';
 import { ReportRepository } from '../../infrastructure/repositories/ReportRepository';
+import { CreateCommentUseCase } from '../../application/useCases/post/CreateCommentUseCase';
+import { UpdateCommentUseCase } from '../../application/useCases/post/UpdateCommentUseCase';
+import { GetCommentsUseCase } from '../../application/useCases/post/GetCommentsUseCase';
+import { DeleteCommentUseCase } from '../../application/useCases/post/DeleteCommentUseCase';
+import { CommentRepository } from '../../infrastructure/repositories/CommentRepository';
 
 
 
@@ -18,11 +23,16 @@ export class PostController {
   private updatePostUseCase: UpdatePostUseCase;
   private likePostUseCase: LikePostUseCase;
   private reportPostUseCase: ReportPostUseCase;
+  private createCommentUseCase: CreateCommentUseCase;
+  private getCommentsUseCase: GetCommentsUseCase;
+  private updateCommentUseCase: UpdateCommentUseCase;
+  private deleteCommentUseCase: DeleteCommentUseCase;
 
   constructor(
     private postRepository: PostRepository,
     private s3Service: S3Service,
     private userRepository: UserRepository,
+    private commentRepository: CommentRepository,
     private reportRepository: ReportRepository
   ) {
     this.createPostUseCase = new CreatePostUseCase(postRepository, s3Service);
@@ -30,6 +40,10 @@ export class PostController {
     this.updatePostUseCase = new UpdatePostUseCase(postRepository);
     this.likePostUseCase = new LikePostUseCase(postRepository);
     this.reportPostUseCase = new ReportPostUseCase(reportRepository, postRepository);
+    this.createCommentUseCase = new CreateCommentUseCase(commentRepository, postRepository);
+    this.getCommentsUseCase = new GetCommentsUseCase(commentRepository);
+    this.updateCommentUseCase = new UpdateCommentUseCase(commentRepository);
+    this.deleteCommentUseCase = new DeleteCommentUseCase(commentRepository);
   }
 
   async createPost(req: Request, res: Response) {
@@ -48,7 +62,7 @@ export class PostController {
         postType,
         location,
         audience,
-      };
+      }; 
       const newPost = await this.createPostUseCase.execute(postData, file);
       if(newPost) {
         console.log(' Post id:', newPost)
@@ -63,6 +77,8 @@ export class PostController {
 
   async getPostsForHome(req: Request, res: Response) {
     try {
+      console.log('getPostsForHome Triggered');
+      
       const userId = req.userId;
       const type = req.query.type as string; // 'following' or 'all'
       
@@ -130,7 +146,7 @@ export class PostController {
         return res.status(400).json({ message: error.message });
       }
     }
-  }
+  }  
 
   async updatePost(req: Request, res: Response) {
     try {
@@ -193,6 +209,136 @@ export class PostController {
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async getComments(req: Request, res: Response) {
+    try {
+      const postId = req.params.postId;
+      const comments = await this.getCommentsUseCase.execute(postId);
+      console.log(comments);
+      
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Comments retrieved successfully',
+        data: comments
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+    }
+  }
+
+  async createComment(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const postId = req.params.postId;
+      const { content } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+      }
+
+      if (!content) {
+        return res.status(400).json({ success: false, message: 'Content is required' });
+      }
+
+      const comment = await this.createCommentUseCase.execute(postId, userId, content);
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Comment created successfully',
+        data: comment
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+    }
+  }
+
+  async updateComment(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const { postId, commentId } = req.params;
+      const { content } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+      }
+
+      if (!content) {
+        return res.status(400).json({ success: false, message: 'Content is required' });
+      }
+
+      const updatedComment = await this.updateCommentUseCase.execute(commentId, userId, content);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Comment updated successfully',
+        data: updatedComment
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+    }
+  }
+
+  async deleteComment(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const { postId, commentId } = req.params;
+
+      if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+      }
+
+      await this.deleteCommentUseCase.execute(commentId, userId);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Comment deleted successfully'
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+    }
+  }
+
+  async createReplyComment(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const { postId, parentCommentId } = req.params;
+      const { content } = req.body;
+  
+      if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+      }
+  
+      if (!content) {
+        return res.status(400).json({ success: false, message: 'Content is required' });
+      }
+  
+      const comment = await this.createCommentUseCase.execute(
+        postId, 
+        userId, 
+        content, 
+        parentCommentId
+      );
+      
+      return res.status(201).json({
+        success: true,
+        message: 'Reply created successfully',
+        data: comment
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ success: false, message: error.message });
       }
     }
   }

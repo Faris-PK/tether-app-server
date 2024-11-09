@@ -18,7 +18,8 @@ export class GetPeopleSuggestionsUseCase {
       username: suggestion.username,
       profile_picture: suggestion.profile_picture,
       mutualFriends: 0, 
-      isFollowing: false
+      isFollowing: false,
+      createdAt: suggestion.createdAt ,
     }));
   }
 }

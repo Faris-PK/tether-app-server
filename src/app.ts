@@ -9,6 +9,7 @@ import morgan from 'morgan'
 import adminRoutes from './presentation/routes/AdminRoute';
 import userRouter from './presentation/routes/UserRoute';
 import postRoutes from './presentation/routes/PostRoutes';
+import productRouter from './presentation/routes/productRoutes';
 dotenv.config();
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes );
 app.use('/user',userRouter);
 app.use('/posts', postRoutes);
+app.use('/market', productRouter);
 
 const PORT = process.env.PORT || 5000;
 

@@ -1,6 +1,8 @@
   import mongoose, { Schema, Document, Types } from 'mongoose';
 
   export interface IUser extends Document {
+    stripeCustomerId: string;
+    createdAt: any;
     username: string;
     email: string;
     password: string;
@@ -19,6 +21,7 @@
     posts: Types.ObjectId[];
     social_links?: string[];
     blocked_users: Types.ObjectId[];
+    
   }
 
   const UserSchema: Schema = new Schema({
@@ -39,7 +42,8 @@
     following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     posts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
     social_links: [{ type: String }],
-    blocked_users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    blocked_users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    stripeCustomerId: { type: String },
   }, { timestamps: true });
 
   export const User = mongoose.model<IUser>('User', UserSchema);

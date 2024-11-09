@@ -17,4 +17,4 @@ export class UpdateUserProfileUseCase {
     await this.userRepository.save(user);
     return user;
   }
-}
+}  

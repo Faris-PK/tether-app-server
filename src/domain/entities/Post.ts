@@ -8,6 +8,7 @@ export interface IPost extends Document {
   location?: string;
   likes: Types.ObjectId[];
   isBlocked: boolean; 
+  commentCount?: number;
 }
 
 const PostSchema: Schema = new Schema({
@@ -18,6 +19,18 @@ const PostSchema: Schema = new Schema({
   location: { type: String },
   likes: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   isBlocked: { type: Boolean, default: false }, 
-}, { timestamps: true });
+}, { timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+ });
+
+
+PostSchema.virtual('commentCount', {
+  ref: 'Comment',
+  localField: '_id',
+  foreignField: 'postId',
+  count: true, 
+  match: { isDeleted: false }
+});
 
 export const Post = mongoose.model<IPost>('Post', PostSchema);

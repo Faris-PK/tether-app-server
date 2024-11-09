@@ -19,6 +19,7 @@ export class PostRepository implements IPostRepository {
   async findWithUserDetails(userId: string): Promise<any[]> {
     return await Post.find({ userId })
       .populate('userId', 'username profile_picture')
+      .populate('commentCount')
       .lean();
   }
 
@@ -85,6 +86,7 @@ export class PostRepository implements IPostRepository {
       ]
     })
     .populate('userId', 'username profile_picture')
+    .populate('commentCount')
     .sort({ createdAt: -1 })
     .lean();
   }
@@ -92,6 +94,7 @@ export class PostRepository implements IPostRepository {
   async findAllPosts(): Promise<any[]> {
     return await Post.find()
       .populate('userId', 'username profile_picture')
+      .populate('commentCount')
       .sort({ createdAt: -1 })
       .lean();
   }

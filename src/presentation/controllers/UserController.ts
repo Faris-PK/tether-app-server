@@ -2,14 +2,20 @@ import { Request, Response } from "express";
 import { GetUserProfileUseCase } from '../../application/useCases/user/GetUserProfileUseCase';
 import { UpdateUserProfileUseCase } from '../../application/useCases/user/UpdateUserProfileUseCase';
 import { UploadImageUseCase } from '../../application/useCases/user/UploadImageUseCase';
-import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { RemoveProfilePictureUseCase } from '../../application/useCases/user/RemoveProfilePictureUseCase';
 import { S3Service } from '../../infrastructure/services/S3Service';
 import { GetFollowRequestsUseCase } from "../../application/useCases/user/GetFollowRequestsUseCase";
 import { GetPeopleSuggestionsUseCase } from "../../application/useCases/user/GetPeopleSuggestionsUseCase";
 import { FollowUserUseCase } from "../../application/useCases/user/FollowUserUseCase";
 import { UnfollowUserUseCase } from "../../application/useCases/user/UnfollowUserUseCase";
+import { GetFollowersUseCase } from '../../application/useCases/user/GetFollowersUseCase';
+import { GetFollowingUseCase } from '../../application/useCases/user/GetFollowingUseCase';
+import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { NotificationRepository } from "../../infrastructure/repositories/NotificationRepository";
+import { StripeService } from '../../infrastructure/services/StripeService';
+
+
+
 export class UserController {
     private getUserProfileUseCase: GetUserProfileUseCase;
     private updateUserProfileUseCase: UpdateUserProfileUseCase;
@@ -19,9 +25,14 @@ export class UserController {
     private getPeopleSuggestionsUseCase: GetPeopleSuggestionsUseCase ;
     private followUserUseCase: FollowUserUseCase ;
     private unfollowUserUseCase: UnfollowUserUseCase ;
+    private getFollowersUseCase: GetFollowersUseCase;
+  private getFollowingUseCase: GetFollowingUseCase;
       
-    constructor(private userRepository: UserRepository,
-      private notificationRepository: NotificationRepository
+    constructor(
+      private userRepository: UserRepository,
+      private notificationRepository: NotificationRepository,
+      private stripeService: StripeService,
+
     ) {
         this.getUserProfileUseCase = new GetUserProfileUseCase(userRepository);
         this.updateUserProfileUseCase = new UpdateUserProfileUseCase(userRepository);
@@ -32,6 +43,8 @@ export class UserController {
         this.getPeopleSuggestionsUseCase = new GetPeopleSuggestionsUseCase(userRepository);
         this.followUserUseCase = new FollowUserUseCase(userRepository, notificationRepository);
         this.unfollowUserUseCase = new UnfollowUserUseCase(userRepository, notificationRepository);
+        this.getFollowersUseCase = new GetFollowersUseCase(userRepository);
+        this.getFollowingUseCase = new GetFollowingUseCase(userRepository);
             
     }
 
@@ -120,8 +133,11 @@ export class UserController {
     
       async getPeopleSuggestions(req: Request, res: Response) {
         try {
+          
           const userId = req.userId;
           const suggestions = await this.getPeopleSuggestionsUseCase.execute(userId ?? '');
+         // console.log(' suggestions users: ', suggestions);
+          
           return res.status(200).json(suggestions);
         } catch (error) {
           if (error instanceof Error) {
@@ -174,6 +190,117 @@ export class UserController {
       async removeSuggestion(req: Request, res: Response) {
         // This could be implemented to store user preferences about who they don't want to see in suggestions
         return res.status(200).json({ success: true });
-      }   
+      } 
+      
+      async getFollowers(req: Request, res: Response) {
+        console.log('getFollowers triggered :');
+          
+        try {
+          const userId = req.userId;
+          if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
+          }
+    
+          const followers = await this.getFollowersUseCase.execute(userId);
+          
+          
+          
+          return res.status(200).json({
+            success: true,
+            data: followers
+          });
+        } catch (error) {
+          if (error instanceof Error) {
+            return res.status(400).json({ message: error.message });
+          }
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+      }
+    
+      async getFollowing(req: Request, res: Response) {
+        try {
+          const userId = req.userId;
+          if (!userId) {
+            return res.status(400).json({ message: 'User ID is required' });
+          }
+    
+          const following = await this.getFollowingUseCase.execute(userId);
+          console.log('following :', following);
+          
+          return res.status(200).json({
+            success: true,
+            data: following
+          });
+        } catch (error) {
+          if (error instanceof Error) {
+            return res.status(400).json({ message: error.message });
+          }
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+      }
+
+
+      async createSubscription(req: Request, res: Response) {
+        try {
+          const { priceId, planType } = req.body;
+         // console.log(' payment body : ', req.body);
+          
+          const userId = req.userId; // Assuming you have user data in request from auth middleware
+    
+          if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+          }
+    
+          const sessionId = await this.stripeService.createCheckoutSession(priceId, userId);
+         // console.log('sessionId : ', sessionId);
+          
+          return res.status(200).json({ sessionUrl: sessionId });
+    
+        } catch (error) {
+          console.error('Subscription creation error:', error);
+          return res.status(500).json({ message: 'Error creating subscription' });
+        }
+      }
+    
+      async handleSuccess(req: Request, res: Response) {
+        try {
+          const { session_id } = req.query;
+          console.log( 'Session Id : ', session_id);
+          
+          if (!session_id || typeof session_id !== 'string') {
+            return res.status(400).json({ message: 'Invalid session ID' });
+          }
+    
+          // Retrieve the session to get metadata
+          const session = await this.stripeService.retrieveSession(session_id);
+          const userId = session.metadata?.userId;
+          console.log( 'Session ', session);
+          console.log( 'userId ', userId);
+    
+          if (!userId) {
+            return res.status(400).json({ message: 'User ID not found in session' });
+          }
+    
+          // Calculate expiration date based on the subscription type
+          const now = new Date();
+          const expirationDate = new Date(now);
+          
+          // Determine subscription duration from the price ID or custom logic
+          const isYearly = session.amount_total === 9999; // Example: checking if yearly plan ($99.99)
+          expirationDate.setMonth(expirationDate.getMonth() + (isYearly ? 12 : 1));
+    
+          // Update user premium status
+          let updatedUser = await this.userRepository.update(userId, {
+            premium_status: true,
+            premium_expiration: expirationDate
+          });
+    
+          return res.status(200).json({message: "Payment status Updated",data : updatedUser}, );
+    
+        } catch (error) {
+          console.error('Payment success handling error:', error);
+          //return res.redirect(`${process.env.FRONTEND_URL}/user/payment/error`);
+        }
+      }
       
 }

@@ -27,12 +27,12 @@ export class UnfollowUserUseCase {
       await Promise.all([
         this.userRepository.save(follower),
         this.userRepository.save(targetUser),
-        this.notificationRepository.create({
-          recipient: targetObjectId,
-          sender: followerObjectId,
-          type: 'unfollow',
-          content: `${follower.username} unfollowed you`
-        })
+        // this.notificationRepository.create({
+        //   recipient: targetObjectId,
+        //   sender: followerObjectId,
+        //   type: 'unfollow',
+        //   content: `${follower.username} unfollowed you`
+        // })
       ]);
   
       return { success: true };

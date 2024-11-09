@@ -1,25 +1,45 @@
-import { IComment, Comment } from '../../domain/entities/Comment';
-import { ICommentRepository } from '../../domain/interfaces/ICommentRepository';
+import { Comment, IComment } from '../../domain/entities/Comment';
 
-export class CommentRepository implements ICommentRepository {
-  async save(comment: IComment): Promise<IComment> {
-    return await comment.save();
+export class CommentRepository {
+  async create(comment: Partial<IComment>): Promise<IComment> {
+    const newComment = new Comment(comment);
+    return await newComment.save();
   }
 
-  async findById(id: string): Promise<IComment | null> {
-    return await Comment.findById(id);
+  async findById(commentId: string): Promise<IComment | null> {
+    return await Comment.findById(commentId)
+      .populate('userId', 'username profile_picture');
   }
 
   async findByPostId(postId: string): Promise<IComment[]> {
-    return await Comment.find({ postId }).sort({ createdAt: -1 });
+    return await Comment.find({ postId, isDeleted: false, parentCommentId: null })
+      .populate('userId', 'username profile_picture')
+      .sort({ createdAt: -1 });
   }
 
-  async update(id: string, comment: Partial<IComment>): Promise<IComment | null> {
-    return await Comment.findByIdAndUpdate(id, comment, { new: true });
+  async update(commentId: string, content: string): Promise<IComment | null> {
+    return await Comment.findByIdAndUpdate(
+      commentId,
+      { content },
+      { new: true }
+    ).populate('userId', 'username profile_picture');
   }
 
-  async delete(id: string): Promise<boolean> {
-    const result = await Comment.findByIdAndDelete(id);
-    return result !== null;
+  async delete(commentId: string): Promise<void> {
+    await Comment.findByIdAndUpdate(commentId, { isDeleted: true });
   }
+
+  async isCommentOwner(commentId: string, userId: string): Promise<boolean> {
+    const comment = await Comment.findById(commentId);
+    return comment?.userId.toString() === userId;
+  }
+  async findRepliesByCommentId(commentId: string): Promise<IComment[]> {
+    return await Comment.find({ 
+      parentCommentId: commentId, 
+      isDeleted: false 
+    })
+    .populate('userId', 'username profile_picture')
+    .sort({ createdAt: 1 });
+  }
+  
 }

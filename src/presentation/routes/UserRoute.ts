@@ -4,11 +4,14 @@ import { UserRepository } from '../../infrastructure/repositories/UserRepository
 import { authMiddleware } from '../middleware/authMiddleware';
 import multer from 'multer'
 import { NotificationRepository } from '../../infrastructure/repositories/NotificationRepository';
+import { StripeService } from '../../infrastructure/services/StripeService';
 
 const userRouter = Router();
 const userRepository = new UserRepository();
-const notificationRepository = new NotificationRepository()
-const userController = new UserController(userRepository, notificationRepository);
+const notificationRepository = new NotificationRepository();
+const stripeService = new StripeService(process.env.STRIPE_SECRET!);
+
+const userController = new UserController(userRepository, notificationRepository, stripeService);
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -20,11 +23,24 @@ userRouter.post('/upload-image', authMiddleware, upload.single('file'), (req, re
 userRouter.post('/remove-profile-picture', authMiddleware, (req, res) => userController.removeProfilePicture(req, res));
 
 //user connections
+userRouter.get('/followers', authMiddleware, (req, res) => userController.getFollowers(req, res));
+userRouter.get('/following', authMiddleware, (req, res) => userController.getFollowing(req, res));
 userRouter.get('/follow-requests', authMiddleware, (req, res) => userController.getFollowRequests(req, res));
 userRouter.get('/suggestions', authMiddleware, (req, res) => userController.getPeopleSuggestions(req, res));
 userRouter.post('/follow/:targetUserId', authMiddleware, (req, res) => userController.followUser(req, res));
 userRouter.post('/unfollow/:targetUserId', authMiddleware, (req, res) => userController.unfollowUser(req, res));
 userRouter.delete('/remove-request/:requestId', authMiddleware, (req, res) => userController.removeFollowRequest(req, res));
 userRouter.delete('/remove-suggestion/:userId', authMiddleware, (req, res) => userController.removeSuggestion(req, res));
+userRouter.post(
+   '/create-subscription',
+   authMiddleware,
+   (req, res) => userController.createSubscription(req, res)
+ );
+ 
+ userRouter.get(
+   '/success',
+   (req, res) => userController.handleSuccess(req, res)
+ );
 
-export default userRouter;
+
+export default userRouter;      
