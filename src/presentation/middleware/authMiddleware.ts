@@ -9,6 +9,7 @@ interface DecodedJwt {
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies.refreshToken;
+                    
  // console.log('token: ', token);
   
   if (!token) {

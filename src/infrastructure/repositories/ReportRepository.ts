@@ -21,6 +21,12 @@ export class ReportRepository {
       .populate('postId')
       .sort({ createdAt: -1 });
   }
+  async findByPostAndUser(postId: string, userId: string): Promise<IReport | null> {
+    return await Report.findOne({
+      postId,
+      reportedBy: userId
+    });
+  }
 
   // async updateStatus(reportId: string, status: 'pending' | 'reviewed' | 'resolved'): Promise<IReport | null> {
   //   return await Report.findByIdAndUpdate(

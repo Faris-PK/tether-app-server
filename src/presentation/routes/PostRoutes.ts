@@ -33,4 +33,6 @@ postRouter.post('/comments/add/:postId', authMiddleware, checkUserBlockedMiddlew
 postRouter.put('/comments/edit/:postId/:commentId', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.updateComment(req, res));
 postRouter.delete('/comments/delete/:postId/:commentId', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.deleteComment(req, res));
 postRouter.post('/comments/reply/:postId/:parentCommentId', authMiddleware, checkUserBlockedMiddleware, (req, res) => postController.createReplyComment(req, res));
+
+
 export default postRouter;

@@ -14,6 +14,11 @@ export class ReportPostUseCase {
       throw new Error('Post not found');
     }
 
+    const existingReport = await this.reportRepository.findByPostAndUser(postId, userId);
+    if (existingReport) {
+      throw new Error('You have already reported this post');
+    }
+
     // Create report
     const report = await this.reportRepository.create({
       postId,
@@ -21,11 +26,7 @@ export class ReportPostUseCase {
       reason
     });
 
-    // If post gets reported multiple times, you might want to automatically block it
-    // const reports = await this.reportRepository.findByPostId(postId);
-    // if (reports.length >= 5) { // You can adjust this threshold
-    //   await this.postRepository.blockPost(postId);
-    // }
+
 
     return report;
   }

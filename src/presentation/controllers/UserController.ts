@@ -13,8 +13,7 @@ import { GetFollowingUseCase } from '../../application/useCases/user/GetFollowin
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { NotificationRepository } from "../../infrastructure/repositories/NotificationRepository";
 import { StripeService } from '../../infrastructure/services/StripeService';
-
-
+import { GetOtherUserProfileUseCase } from "../../application/useCases/user/GetOtherUserProfileUseCase";
 
 export class UserController {
     private getUserProfileUseCase: GetUserProfileUseCase;
@@ -26,8 +25,9 @@ export class UserController {
     private followUserUseCase: FollowUserUseCase ;
     private unfollowUserUseCase: UnfollowUserUseCase ;
     private getFollowersUseCase: GetFollowersUseCase;
-  private getFollowingUseCase: GetFollowingUseCase;
-      
+    private getFollowingUseCase: GetFollowingUseCase;
+    private getOtherUserProfileUseCase: GetOtherUserProfileUseCase;
+  
     constructor(
       private userRepository: UserRepository,
       private notificationRepository: NotificationRepository,
@@ -45,6 +45,8 @@ export class UserController {
         this.unfollowUserUseCase = new UnfollowUserUseCase(userRepository, notificationRepository);
         this.getFollowersUseCase = new GetFollowersUseCase(userRepository);
         this.getFollowingUseCase = new GetFollowingUseCase(userRepository);
+        this.getOtherUserProfileUseCase = new GetOtherUserProfileUseCase(userRepository);
+
             
     }
 
@@ -302,5 +304,30 @@ export class UserController {
           //return res.redirect(`${process.env.FRONTEND_URL}/user/payment/error`);
         }
       }
+
+      async getOtherUserProfile(req: Request, res: Response) {
+        try {
+
+         
+          
+            const targetUserId = req.params.userId;
+            const currentUserId = '67137b0bc69660d37ac1db84';
+            console.log('targetUserId : ', targetUserId);
+            console.log('currentUserId :', currentUserId);
+
+            if (!targetUserId) {
+                return res.status(400).json({ message: 'User ID is required' });
+            }
+
+            const userProfile = await this.getOtherUserProfileUseCase.execute(targetUserId, currentUserId??'');
+            return res.status(200).json(userProfile);
+
+        } catch (error) {
+            if (error instanceof Error) {
+                return res.status(400).json({ message: error.message });
+            }
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    }
       
 }
