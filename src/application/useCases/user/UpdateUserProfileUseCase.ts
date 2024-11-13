@@ -10,10 +10,11 @@ export class UpdateUserProfileUseCase {
     if (!user) {
       throw new Error('User not found');
     }
-
+    
     // Update user fields
-    Object.assign(user, updateData);
-
+    const updatedUSer = Object.assign(user, updateData);
+  //  console.log('updatedUSer : ', updatedUSer);
+  
     await this.userRepository.save(user);
     return user;
   }

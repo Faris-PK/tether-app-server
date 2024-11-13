@@ -52,7 +52,7 @@ export class UserController {
 
     async getProfile (req: Request, res: Response, ) {
         try {
-            const userId = req.userId //from middleware
+            const userId = req.params.userId //from middleware
             console.log('userId from controller : ', userId);
             
             const user = await this.getUserProfileUseCase.execute(userId??'');
@@ -68,10 +68,9 @@ export class UserController {
     async updateProfile(req: Request, res: Response) {
         try {
             const userId = req.userId;
-            
-
            const updatedData = req.body;
-           console.log('updatedData : ', updatedData);
+            console.log('updatedData : ', updatedData)
+  
            const UpdateUser = await this.updateUserProfileUseCase.execute(userId??'', updatedData);
            return res.status(200).json(updatedData)
         } catch (error) {

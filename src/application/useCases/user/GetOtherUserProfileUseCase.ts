@@ -35,7 +35,7 @@ export class GetOtherUserProfileUseCase {
       bio: user.bio,
       profile_picture: user.profile_picture,
       cover_photo: user.cover_photo,
-      location: user.location,
+      userLocation: user.userLocation,
       followers: user.followers,
       following: user.following,
       posts: user.posts,
