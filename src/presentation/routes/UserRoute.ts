@@ -23,8 +23,8 @@ userRouter.post('/upload-image', authMiddleware, upload.single('file'), (req, re
 userRouter.post('/remove-profile-picture', authMiddleware, (req, res) => userController.removeProfilePicture(req, res));
 
 //user connections
-userRouter.get('/followers', authMiddleware, (req, res) => userController.getFollowers(req, res));
-userRouter.get('/following', authMiddleware, (req, res) => userController.getFollowing(req, res));
+userRouter.get('/followers/:userId', authMiddleware, (req, res) => userController.getFollowers(req, res));
+userRouter.get('/following/:userId', authMiddleware, (req, res) => userController.getFollowing(req, res));
 userRouter.get('/follow-requests', authMiddleware, (req, res) => userController.getFollowRequests(req, res));
 userRouter.get('/suggestions', authMiddleware, (req, res) => userController.getPeopleSuggestions(req, res));
 userRouter.post('/follow/:targetUserId', authMiddleware, (req, res) => userController.followUser(req, res));

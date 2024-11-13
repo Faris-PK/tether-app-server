@@ -198,7 +198,7 @@ export class UserController {
         console.log('getFollowers triggered :');
           
         try {
-          const userId = req.userId;
+          const userId = req.params.userId;
           if (!userId) {
             return res.status(400).json({ message: 'User ID is required' });
           }
@@ -221,7 +221,7 @@ export class UserController {
     
       async getFollowing(req: Request, res: Response) {
         try {
-          const userId = req.userId;
+          const userId = req.params.userId;
           if (!userId) {
             return res.status(400).json({ message: 'User ID is required' });
           }

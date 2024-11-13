@@ -113,7 +113,7 @@ export class PostController {
 
   async getPostsForProfile(req: Request, res: Response) {
     try {
-      const userId = req.userId; 
+      const userId = req.params.userId; 
       let posts;
       if (userId) {
          posts = await this.postRepository.findWithUserDetails(userId);
