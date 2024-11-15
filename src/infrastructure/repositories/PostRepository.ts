@@ -9,7 +9,10 @@ export class PostRepository implements IPostRepository {
   }
 
   async findById(id: string): Promise<IPost | null> {
-    return await Post.findById(id);
+    return await Post.findById(id)
+    .populate('userId', 'username profile_picture') 
+    .populate('commentCount')
+    .lean();
   }
 
   async findByUserId(userId: string): Promise<IPost[]> {

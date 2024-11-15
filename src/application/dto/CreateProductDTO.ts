@@ -3,6 +3,12 @@ export interface CreateProductDTO {
   title: string;
   price: number;
   category: string;
-  location: string;
+  location: {
+    name: string;
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+  };
   description: string;
 }

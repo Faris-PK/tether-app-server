@@ -11,14 +11,19 @@ export class CreateProductUseCase {
 
   async execute(productData: CreateProductDTO, files: Express.Multer.File[]): Promise<any> {
     try {
+      // Validate location data
+      if (!productData.location?.name || 
+          !productData.location?.coordinates?.latitude || 
+          !productData.location?.coordinates?.longitude) {
+        throw new Error('Invalid location data');
+      }
+
       // Upload images to S3
       const uploadPromises = files.map(file => 
         this.s3Service.uploadFile(file, 'products')
       );
       
       const uploadResults = await Promise.all(uploadPromises);
-      
-      // Extract the image URLs from the upload results
       const imageUrls = uploadResults.map(result => result.Location);
 
       const product = new Product({

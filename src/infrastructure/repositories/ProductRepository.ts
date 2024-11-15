@@ -23,38 +23,11 @@ export class ProductRepository implements IProductRepository {
     await Product.findByIdAndDelete(id);
   }
 
-  async findAll(filters?: any): Promise<IProduct[]> {
-    let query = Product.find({ isBlocked: false });
+  async findAll(filters?: { excludeUserId?: string }): Promise<IProduct[]> {
+    const query = Product.find({ isBlocked: false });
 
-    // Exclude current user's products
     if (filters?.excludeUserId) {
-      query = query.find({ userId: { $ne: filters.excludeUserId } });
-    }
-
-    if (filters) {
-      if (filters.search) {
-        query = query.find({
-          $or: [
-            { title: { $regex: filters.search, $options: 'i' } },
-            { description: { $regex: filters.search, $options: 'i' } }
-          ]
-        });
-      }
-
-      if (filters.category) {
-        query = query.find({ category: filters.category });
-      }
-
-      if (filters.minPrice || filters.maxPrice) {
-        const priceFilter: any = {};
-        if (filters.minPrice) priceFilter.$gte = filters.minPrice;
-        if (filters.maxPrice) priceFilter.$lte = filters.maxPrice;
-        query = query.find({ price: priceFilter });
-      }
-
-      if (filters.location) {
-        query = query.find({ location: { $regex: filters.location, $options: 'i' } });
-      }
+      query.find({ userId: { $ne: filters.excludeUserId } });
     }
 
     return await query

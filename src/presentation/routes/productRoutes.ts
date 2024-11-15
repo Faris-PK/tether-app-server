@@ -14,5 +14,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 productRouter.post('/create', authMiddleware, checkUserBlockedMiddleware, upload.array('images', 10), (req, res) => productController.createProduct(req, res));
 productRouter.get('/', authMiddleware, checkUserBlockedMiddleware, (req, res) => productController.getProducts(req, res));
+productRouter.get('/products/:userId', authMiddleware, checkUserBlockedMiddleware, (req, res) => productController.getUserProducts(req, res));
 
 export default productRouter;

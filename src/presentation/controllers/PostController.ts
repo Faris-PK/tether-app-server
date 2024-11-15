@@ -342,4 +342,21 @@ export class PostController {
       }
     }
   }
+
+  async getSinglePost (req: Request, res: Response) {
+    try {
+      const postId = req.params.postId;
+       console.log('post Id:  ', postId)
+      if (!postId) {
+        return res.status(400).json({ success: false, message: 'Post ID is required' });
+      }
+
+      const post = await this.postRepository.findById(postId)
+      console.log('Fetched singlepost : ', post)
+      return res.status(200).json(post);
+
+    } catch (error) {
+      return res.status(400).json({ message: 'error occured while fetching post' });
+    }
+  }
 }  

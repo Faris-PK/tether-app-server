@@ -5,7 +5,13 @@ export interface IProduct extends Document {
   title: string;
   price: number;
   category: string;
-  location: string;
+  location: {
+    name: string;
+    coordinates: {
+      latitude: number;
+      longitude: number;
+    };
+  };
   description: string;
   images: string[];
   isBlocked: boolean;
@@ -16,7 +22,13 @@ const ProductSchema: Schema = new Schema({
   title: { type: String, required: true },
   price: { type: Number, required: true },
   category: { type: String, required: true },
-  location: { type: String, required: true },
+  location: {
+    name: { type: String, required: true },
+    coordinates: {
+      latitude: { type: Number, required: true },
+      longitude: { type: Number, required: true }
+    }
+  },
   description: { type: String, required: true },
   images: [{ type: String }],
   isBlocked: { type: Boolean, default: false },

@@ -20,7 +20,7 @@ export class RegisterUserUseCase {
 
   async execute(userData: RegisterUserDTO): Promise<void> {
     const { username, email, password, mobile } = userData;
-    console.log('userData from useCase', userData);
+    //console.log('userData from useCase', userData);
     
 
     const existingUserByEmail = await this.userRepository.findByEmail(email);

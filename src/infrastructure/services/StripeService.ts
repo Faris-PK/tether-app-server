@@ -22,7 +22,8 @@ export class StripeService {
       success_url: `${process.env.FRONTEND_URL}/user/paymentsuccess?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.FRONTEND_URL}/user/payment/cancel`,
       metadata: {
-        userId: userId
+        userId: userId,
+        priceId: priceId
       }
     });
     
@@ -32,5 +33,8 @@ export class StripeService {
 
   async retrieveSession(sessionId: string): Promise<Stripe.Checkout.Session> {
     return await this.stripe.checkout.sessions.retrieve(sessionId);
+  }
+  async getSubscriptionDetails(priceId: string): Promise<Stripe.Price> {
+    return await this.stripe.prices.retrieve(priceId);
   }
 }

@@ -4,6 +4,21 @@ import { ProductRepository } from '../../infrastructure/repositories/ProductRepo
 import { S3Service } from '../../infrastructure/services/S3Service';
 import { CreateProductDTO } from '../../application/dto/CreateProductDTO';
 
+interface FilterParams {
+  search?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  location?: string;
+  sortBy?: 'price' | 'date';
+  order?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+  latitude?: number;
+  longitude?: number;
+  radius?: number;
+}
+
 export class ProductController {
   private createProductUseCase: CreateProductUseCase;
 
@@ -18,10 +33,27 @@ export class ProductController {
     try {
       const userId = req.userId;
       const files = req.files as Express.Multer.File[];
-      const { title, price, category, location, description } = req.body;
+      const { 
+        title, 
+        price, 
+        category, 
+        location, 
+        description 
+      } = req.body;
+    //  console.log('req.body : ', req.body)
 
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      // Parse location object from request body
+      let locationData;
+      try {
+        locationData = typeof location === 'string' ? JSON.parse(location) : location;
+      } catch (error) {
+      //  console.log('Invalid location format');
+        
+        return res.status(400).json({ message: 'Invalid location format' });
       }
 
       const productData: CreateProductDTO = {
@@ -29,10 +61,9 @@ export class ProductController {
         title,
         price: Number(price),
         category,
-        location,
+        location: locationData,
         description
       };
-      
 
       const newProduct = await this.createProductUseCase.execute(productData, files);
       
@@ -41,29 +72,41 @@ export class ProductController {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
+      return res.status(500).json({ message: 'Internal server error' });
     }
   }
 
   async getProducts(req: Request, res: Response) {
     try {
-      const { search, category, minPrice, maxPrice, location } = req.query;
       const currentUserId = req.userId;
       
-      const filters = {
-        search: search as string,
-        category: category as string,
-        minPrice: minPrice ? Number(minPrice) : undefined,
-        maxPrice: maxPrice ? Number(maxPrice) : undefined,
-        location: location as string,
-        excludeUserId: currentUserId
-      };
-
-      const products = await this.productRepository.findAll(filters);
+      const products = await this.productRepository.findAll({ excludeUserId: currentUserId });
       return res.status(200).json(products);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  async getUserProducts(req: Request, res: Response) {
+    try {
+      const userId = req.params.userId;
+   //  // console.log( ' userID from getUserProducts : ', userId)
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      const products = await this.productRepository.findByUserId(userId);
+     // console.log( 'Products : ', products)
+      return res.status(200).json(products);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: 'Internal server error' });
     }
   }
 }
