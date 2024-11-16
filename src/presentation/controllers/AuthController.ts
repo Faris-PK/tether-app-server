@@ -7,6 +7,9 @@ import { ResendOTPUseCase } from '../../application/useCases/user/ResendOTPUseCa
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { OTPRepository } from '../../infrastructure/repositories/OTPRepository';
 import { MailService } from '../../infrastructure/mail/MailService';
+import { ForgotPasswordUseCase } from '../../application/useCases/user/ForgotPasswordUseCase';
+import { ResetPasswordUseCase } from '../../application/useCases/user/ResetPasswordUseCase';
+
 
 export class AuthController {
   private registerUserUseCase: RegisterUserUseCase;
@@ -14,6 +17,8 @@ export class AuthController {
   private loginUserUseCase: LoginUserUseCase;
   private refreshTokenUseCase: RefreshTokenUseCase;
   private resendOTPUseCase: ResendOTPUseCase;
+  private forgotPasswordUseCase: ForgotPasswordUseCase;
+  private resetPasswordUseCase: ResetPasswordUseCase;
 
   constructor(
     private userRepository: UserRepository,
@@ -25,6 +30,8 @@ export class AuthController {
     this.loginUserUseCase = new LoginUserUseCase(userRepository);
     this.refreshTokenUseCase = new RefreshTokenUseCase(userRepository);
     this.resendOTPUseCase = new ResendOTPUseCase(otpRepository, mailService);
+    this.forgotPasswordUseCase = new ForgotPasswordUseCase(userRepository, otpRepository, mailService);
+    this.resetPasswordUseCase = new ResetPasswordUseCase(userRepository, otpRepository);
   }
   async register(req: Request, res: Response) {
     try {
@@ -110,5 +117,33 @@ export class AuthController {
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
     return res.status(200).json({ message: 'Logged out successfully' });
+  }
+
+  async forgotPassword(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+      await this.forgotPasswordUseCase.execute(email);
+      return res.status(200).json({ 
+        message: 'Password reset OTP has been sent to your email' 
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async resetPassword(req: Request, res: Response) {
+    try {
+      const { email, otp, newPassword } = req.body;
+      await this.resetPasswordUseCase.execute({ email, otp, newPassword });
+      return res.status(200).json({ 
+        message: 'Password has been reset successfully' 
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
   }
 }

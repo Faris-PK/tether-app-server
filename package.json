@@ -33,6 +33,7 @@
     "stripe": "^17.3.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^4.17.21",
     "@types/mongoose": "^5.11.97",
     "@types/morgan": "^1.9.9",

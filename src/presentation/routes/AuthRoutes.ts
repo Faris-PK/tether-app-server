@@ -22,5 +22,8 @@ authRouter.post('/resend-otp', (req, res) => authController.resendOTP(req, res))
 authRouter.post('/login', (req, res) => authController.login(req, res));
 authRouter.post('/logout', (req, res) => authController.logout(req, res));
 authRouter.post('/google', (req, res) => googleAuthController.googleLogin(req, res));
+authRouter.post('/forgot-password', (req, res) => authController.forgotPassword(req, res));
+authRouter.post('/reset-password', (req, res) => authController.resetPassword(req, res));
+
 
 export default authRouter;
