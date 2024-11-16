@@ -15,6 +15,8 @@ export interface IProduct extends Document {
   description: string;
   images: string[];
   isBlocked: boolean;
+  isPromoted: boolean;
+  promotionExpiry: Date | null;
 }
 
 const ProductSchema: Schema = new Schema({
@@ -32,6 +34,8 @@ const ProductSchema: Schema = new Schema({
   description: { type: String, required: true },
   images: [{ type: String }],
   isBlocked: { type: Boolean, default: false },
+  isPromoted: { type: Boolean, default: false },
+  promotionExpiry: { type: Date, default: null }
 }, { 
   timestamps: true,
   toJSON: { virtuals: true },

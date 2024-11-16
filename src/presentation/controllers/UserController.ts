@@ -226,7 +226,7 @@ export class UserController {
           }
     
           const following = await this.getFollowingUseCase.execute(userId);
-          console.log('following :', following);
+        //  console.log('following :', following);
           
           return res.status(200).json({
             success: true,

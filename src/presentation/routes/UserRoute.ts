@@ -31,6 +31,8 @@ userRouter.post('/follow/:targetUserId', authMiddleware, (req, res) => userContr
 userRouter.post('/unfollow/:targetUserId', authMiddleware, (req, res) => userController.unfollowUser(req, res));
 userRouter.delete('/remove-request/:requestId', authMiddleware, (req, res) => userController.removeFollowRequest(req, res));
 userRouter.delete('/remove-suggestion/:userId', authMiddleware, (req, res) => userController.removeSuggestion(req, res));
+
+
 userRouter.post('/create-subscription', authMiddleware, (req, res) => userController.createSubscription(req, res));
 userRouter.get('/success', authMiddleware, (req, res) => userController.handleSuccess(req, res));
 
