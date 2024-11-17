@@ -30,8 +30,8 @@ export class AuthController {
     this.loginUserUseCase = new LoginUserUseCase(userRepository);
     this.refreshTokenUseCase = new RefreshTokenUseCase(userRepository);
     this.resendOTPUseCase = new ResendOTPUseCase(otpRepository, mailService);
-    this.forgotPasswordUseCase = new ForgotPasswordUseCase(userRepository, otpRepository, mailService);
-    this.resetPasswordUseCase = new ResetPasswordUseCase(userRepository, otpRepository);
+    this.forgotPasswordUseCase = new ForgotPasswordUseCase(userRepository, mailService);
+    this.resetPasswordUseCase = new ResetPasswordUseCase(userRepository);
   }
   async register(req: Request, res: Response) {
     try {
@@ -122,9 +122,10 @@ export class AuthController {
   async forgotPassword(req: Request, res: Response) {
     try {
       const { email } = req.body;
-      await this.forgotPasswordUseCase.execute(email);
-      return res.status(200).json({ 
-        message: 'Password reset OTP has been sent to your email' 
+      const resetToken = await this.forgotPasswordUseCase.execute(email);
+      return res.status(200).json({
+        message: 'Password reset link has been sent to your email',
+        resetToken // In production, don't send this in response, only send via email
       });
     } catch (error) {
       if (error instanceof Error) {
@@ -135,10 +136,10 @@ export class AuthController {
 
   async resetPassword(req: Request, res: Response) {
     try {
-      const { email, otp, newPassword } = req.body;
-      await this.resetPasswordUseCase.execute({ email, otp, newPassword });
-      return res.status(200).json({ 
-        message: 'Password has been reset successfully' 
+      const { token, newPassword } = req.body;
+      await this.resetPasswordUseCase.execute({ token, newPassword });
+      return res.status(200).json({
+        message: 'Password has been reset successfully'
       });
     } catch (error) {
       if (error instanceof Error) {

@@ -17,5 +17,8 @@ productRouter.get('/', authMiddleware, checkUserBlockedMiddleware, (req, res) =>
 productRouter.get('/products/:userId', authMiddleware, checkUserBlockedMiddleware, (req, res) => productController.getUserProducts(req, res));
 productRouter.post('/promote/:productId', authMiddleware, checkUserBlockedMiddleware, (req, res) => productController.createPromotionSession(req, res));
 productRouter.get('/promote/success', authMiddleware, (req, res) => productController.handlePromotionSuccess(req, res));
+productRouter.put('/update/:productId', authMiddleware, checkUserBlockedMiddleware, upload.array('images', 10), (req, res) => productController.updateProduct(req, res));
+productRouter.delete( '/delete/:productId', authMiddleware, checkUserBlockedMiddleware, (req, res) => productController.deleteProduct(req, res));
+  
 
 export default productRouter;

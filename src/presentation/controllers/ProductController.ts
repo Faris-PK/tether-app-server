@@ -4,25 +4,14 @@ import { ProductRepository } from '../../infrastructure/repositories/ProductRepo
 import { S3Service } from '../../infrastructure/services/S3Service';
 import { CreateProductDTO } from '../../application/dto/CreateProductDTO';
 import { StripeService } from '../../infrastructure/services/StripeService';
+import { UpdateProductUseCase } from '../../application/useCases/marketplace/UpdateProductUseCase';
+import { DeleteProductUseCase } from '../../application/useCases/marketplace/DeleteProductUseCase';
 
-
-interface FilterParams {
-  search?: string;
-  category?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  location?: string;
-  sortBy?: 'price' | 'date';
-  order?: 'asc' | 'desc';
-  page?: number;
-  limit?: number;
-  latitude?: number;
-  longitude?: number;
-  radius?: number;
-}
 
 export class ProductController {
   private createProductUseCase: CreateProductUseCase;
+  private updateProductUseCase: UpdateProductUseCase;
+  private deleteProductUseCase: DeleteProductUseCase;
   private stripeService: StripeService;
 
 
@@ -31,6 +20,8 @@ export class ProductController {
     private s3Service: S3Service
   ) {
     this.createProductUseCase = new CreateProductUseCase(productRepository, s3Service);
+    this.updateProductUseCase = new UpdateProductUseCase(productRepository, s3Service);
+    this.deleteProductUseCase = new DeleteProductUseCase(productRepository, s3Service);
     this.stripeService = new StripeService(process.env.STRIPE_SECRET || '');
 
   }
@@ -46,19 +37,16 @@ export class ProductController {
         location, 
         description 
       } = req.body;
-    //  console.log('req.body : ', req.body)
-
+ 
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      // Parse location object from request body
       let locationData;
       try {
         locationData = typeof location === 'string' ? JSON.parse(location) : location;
       } catch (error) {
-      //  console.log('Invalid location format');
-        
+
         return res.status(400).json({ message: 'Invalid location format' });
       }
 
@@ -81,6 +69,90 @@ export class ProductController {
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
+
+
+  async updateProduct(req: Request, res: Response) {
+    try {
+      
+      const userId = req.userId;
+      const productId = req.params.productId;
+      const files = req.files as Express.Multer.File[];
+      
+      
+      const { 
+        title, 
+        price, 
+        category, 
+        location, 
+        description ,
+        existingImages,
+      } = req.body;
+      
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      // Parse location object from request body
+      let locationData;
+      try {
+        locationData = typeof location === 'string' ? JSON.parse(location) : location;
+      } catch (error) {
+        return res.status(400).json({ message: 'Invalid location format' });
+      }
+
+      const productData = {
+        title,
+        price: Number(price),
+        category,
+        location: locationData,
+        description,
+        existingImages
+      };
+     // console.log('productData : ',productData);
+      
+
+      const updatedProduct = await this.updateProductUseCase.execute(
+        productId,
+        userId,
+        productData,
+        files
+      );
+
+      console.log(' updatedProduct : ', updatedProduct);
+      
+      
+      return res.status(200).json(updatedProduct);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  async deleteProduct(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const productId = req.params.productId;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      await this.deleteProductUseCase.execute(productId, userId);
+      
+      return res.status(200).json({ message: 'Product deleted successfully' });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+
+
 
   async getProducts(req: Request, res: Response) {
     try {

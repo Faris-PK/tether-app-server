@@ -1,40 +1,34 @@
 import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
-import { OTPRepository } from '../../../infrastructure/repositories/OTPRepository';
 import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 interface ResetPasswordDTO {
-  email: string;
-  otp: string;
+  token: string;
   newPassword: string;
 }
 
 export class ResetPasswordUseCase {
   constructor(
-    private userRepository: UserRepository,
-    private otpRepository: OTPRepository
+    private userRepository: UserRepository
   ) {}
 
   async execute(data: ResetPasswordDTO): Promise<void> {
-    const { email, otp, newPassword } = data;
+    const { token, newPassword } = data;
 
-    // Verify OTP
-    const otpRecord = await this.otpRepository.findByEmail(email);
-    if (!otpRecord || otpRecord.otp !== otp) {
-      throw new Error('Invalid OTP');
+    try {
+      // Verify token
+      const decoded = jwt.verify(token, process.env.PASSWORD_RESET_SECRET as string) as {
+        userId: string;
+        email: string;
+      };
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Update user password
+      await this.userRepository.update(decoded.userId, { password: hashedPassword });
+    } catch (error) {
+      throw new Error('Invalid or expired reset token');
     }
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update user password
-    const user = await this.userRepository.findByEmail(email);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    await this.userRepository.update(user.id, { password: hashedPassword });
-
-    // Delete used OTP
-    await this.otpRepository.deleteByEmail(email);
   }
 }

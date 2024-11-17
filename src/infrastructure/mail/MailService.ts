@@ -20,7 +20,7 @@ export class MailService {
     await transporter.sendMail(mailOptions);
   }
 
-  async sendPasswordResetOTP(email: string, otp: string): Promise<void> {
+  async sendPasswordResetLink(email: string, resetLink: string): Promise<void> {
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
@@ -32,10 +32,16 @@ export class MailService {
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: 'Password Reset OTP',
-      text: `Your password reset OTP is ${otp}. This OTP will expire in 5 minutes.`,
+      subject: 'Reset Your Password',
+      html: `
+        <h1>Password Reset Request</h1>
+        <p>Click the link below to reset your password. This link will expire in 1 hour.</p>
+        <a href="${resetLink}">Reset Password</a>
+        <p>If you didn't request this, please ignore this email.</p>
+      `,
     };
 
     await transporter.sendMail(mailOptions);
   }
+
 }

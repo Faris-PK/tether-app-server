@@ -12,4 +12,12 @@ const generateRefreshToken = (userId: string) => {
     });
 }
 
-export {generateAccessToken, generateRefreshToken}
+const generatePasswordResetToken = (userId: string, email: string) => {
+    return jwt.sign(
+      { userId, email },
+      process.env.PASSWORD_RESET_SECRET as string,
+      { expiresIn: '1h' } // Reset token expires in 1 hour
+    );
+  };
+
+export {generateAccessToken, generateRefreshToken , generatePasswordResetToken}
