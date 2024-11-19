@@ -6,5 +6,15 @@ export interface IProductRepository {
   findByUserId(userId: string): Promise<IProduct[]>;
   update(id: string, productData: Partial<IProduct>): Promise<IProduct | null>;
   delete(id: string): Promise<void>;
-  findAll(filters?: any): Promise<IProduct[]>;
+  findAll(options: {
+    page: number;
+    limit: number;
+    excludeUserId?: string;
+  }): Promise<{
+    products: IProduct[];
+    totalProducts: number;
+    totalPages: number;
+  }>;
 }
+
+

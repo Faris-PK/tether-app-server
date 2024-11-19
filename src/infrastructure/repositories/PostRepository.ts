@@ -76,23 +76,57 @@ export class PostRepository implements IPostRepository {
     .lean();
   }
 
-  async findAllRelevantPosts(userId: string): Promise<any[]> {
-    // Get user's following list
+  async findAllRelevantPosts({
+    userId,
+    page = 1,
+    limit = 5
+  }: {
+    userId: string;
+    page: number;
+    limit: number;
+  }): Promise<{
+    posts: any[];
+    totalPosts: number;
+    totalPages: number;
+  }> {
     const user = await User.findById(userId).select('following');
-    if (!user) return [];
+    if (!user) return { posts: [], totalPosts: 0, totalPages: 0 };
 
-    // Find posts from both the user and their followed users
-    return await Post.find({
+    const query = Post.find({
       $or: [
-        { userId: userId }, // User's own posts
-        { userId: { $in: user.following } } // Posts from followed users
+        { userId: userId },
+        { userId: { $in: user.following } }
       ]
-    })
-    .populate('userId', 'username profile_picture')
-    .populate('commentCount')
-    .sort({ createdAt: -1 })
-    .lean();
+    });
+
+    const skip = (page - 1) * limit;
+
+    const [posts, totalPosts] = await Promise.all([
+      query
+        .populate('userId', 'username profile_picture')
+        .populate('commentCount')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Post.countDocuments({
+        $or: [
+          { userId: userId },
+          { userId: { $in: user.following } }
+        ]
+      })
+    ]);
+
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    return {
+      posts,
+      totalPosts,
+      totalPages
+    };
   }
+
+
 
   async findAllPosts(): Promise<any[]> {
     return await Post.find()

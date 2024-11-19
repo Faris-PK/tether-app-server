@@ -12,7 +12,8 @@ import { PostRepository } from '../../infrastructure/repositories/PostRepository
 import { GetAllReportsUseCase } from '../../application/useCases/admin/GetAllReportsUseCase';
 import { UpdateReportStatusUseCase } from '../../application/useCases/admin/UpdateReportStatusUseCase';
 import { ReportRepository } from '../../infrastructure/repositories/ReportRepository';
-
+import { GetProductsUseCase } from '../../application/useCases/marketplace/GetProductsUseCase ';
+import { ProductRepository } from '../../infrastructure/repositories/ProductRepository';
 
 export class AdminController {
   private adminLoginUseCase: AdminLoginUseCase;
@@ -24,12 +25,17 @@ export class AdminController {
   private unblockPostUseCase: UnblockPostUseCase;
   private getAllReportsUseCase: GetAllReportsUseCase;
   private updateReportStatusUseCase: UpdateReportStatusUseCase;
+  private getProductsUseCase : GetProductsUseCase;
+
+
+
 
   constructor(
     private adminRepository: AdminRepository,
     private userRepository: UserRepository,
     private postRepository: PostRepository,
     private reportRepository: ReportRepository,
+    private productRepository: ProductRepository
   ) {
     this.adminLoginUseCase = new AdminLoginUseCase(adminRepository);
     this.blockUserUseCase = new BlockUserUseCase(userRepository);
@@ -40,6 +46,8 @@ export class AdminController {
     this.unblockPostUseCase = new UnblockPostUseCase(postRepository);
     this.getAllReportsUseCase = new GetAllReportsUseCase(reportRepository);
     this.updateReportStatusUseCase = new UpdateReportStatusUseCase(reportRepository);
+    this.getProductsUseCase = new GetProductsUseCase(productRepository)
+
   }
 
   async login(req: Request, res: Response) {
@@ -152,10 +160,7 @@ export class AdminController {
     try {
       const { id } = req.params;
       const { status } = req.body;
-      console.log(' from frontend : ', id);
-      console.log("status :", status);
-      
-      
+  
       const report = await this.updateReportStatusUseCase.execute(id, status);
       return res.status(200).json(report);
     } catch (error) {
@@ -164,4 +169,65 @@ export class AdminController {
       }
     }
   }
+
+  async getAllProducts(req: Request, res: Response) {
+    try {
+      const products = await this.getProductsUseCase.execute();
+    //  console.log('products : ', products);
+      
+      return res.status(200).json(products);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+    }
+  }
+
+  async approveProduct(req: Request, res: Response) {
+    try {
+      const { productId } = req.params;
+      const product = await this.productRepository.update(productId, { isApproved: true });
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+      return res.status(200).json(product);
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+
+  async updateProductStatus(req: Request, res: Response) {
+    try {
+      const { productId } = req.params;
+      const { status } = req.body; 
+      console.log(productId, status);
+      
+      
+      if (!['block', 'unblock'].includes(status)) {
+        return res.status(400).json({ message: 'Invalid status value' });
+      }
+
+      const isBlocked = status === 'block';
+      const product = await this.productRepository.updateStatus(productId, isBlocked);
+      
+      if (!product) {
+        return res.status(404).json({ message: 'Product not found' });
+      }
+
+      return res.status(200).json({
+        message: `Product ${isBlocked ? 'blocked' : 'unblocked'} successfully`,
+        product
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+  
 }

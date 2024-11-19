@@ -11,4 +11,6 @@ export interface CreateProductDTO {
     };
   };
   description: string;
+  isApproved?: boolean;
+  isBlocked?:boolean;
 }

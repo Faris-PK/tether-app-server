@@ -11,6 +11,8 @@ export class CreateProductUseCase {
 
   async execute(productData: CreateProductDTO, files: Express.Multer.File[]): Promise<any> {
     try {
+      console.log('hggsdjhg');
+      
       // Validate location data
       if (!productData.location?.name || 
           !productData.location?.coordinates?.latitude || 
@@ -30,6 +32,8 @@ export class CreateProductUseCase {
         ...productData,
         images: imageUrls,
       });
+      console.log('product : ', product);
+      
 
       return await this.productRepository.save(product);
     } catch (error) {

@@ -56,7 +56,7 @@ export class ProductController {
         price: Number(price),
         category,
         location: locationData,
-        description
+        description,
       };
 
       const newProduct = await this.createProductUseCase.execute(productData, files);
@@ -152,14 +152,30 @@ export class ProductController {
   }
 
 
-
-
   async getProducts(req: Request, res: Response) {
     try {
       const currentUserId = req.userId;
-      
-      const products = await this.productRepository.findAll({ excludeUserId: currentUserId });
-      return res.status(200).json(products);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 8;
+      const search = req.query.search as string | undefined;
+      const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice as string) : undefined;
+      const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined;
+      const category = req.query.category as string | undefined;
+      const dateSort = req.query.dateSort as string | undefined;
+  
+
+      const result = await this.productRepository.findAll({
+        page,
+        limit,
+        excludeUserId: currentUserId,
+        search,
+        minPrice,
+        maxPrice,
+        category,
+        dateSort
+      });
+  
+      return res.status(200).json(result);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
@@ -167,6 +183,7 @@ export class ProductController {
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
+  
 
   async getUserProducts(req: Request, res: Response) {
     try {

@@ -74,36 +74,23 @@ export class PostController {
       }
     }
   }
-
   async getPostsForHome(req: Request, res: Response) {
     try {
-      console.log('getPostsForHome Triggered');
-      
       const userId = req.userId;
-      const type = req.query.type as string; // 'following' or 'all'
-      
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 5;
+
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      let posts;
-      switch (type) {
-        case 'following':
-          // Get only posts from followed users
-          posts = await this.postRepository.findFollowingPosts(userId);
-          break;
-        case 'profile':
-          // Get only user's own posts
-          posts = await this.postRepository.findWithUserDetails(userId);
-          break;
-        case 'all':
-        default:
-          // Get both user's posts and followed users' posts
-          posts = await this.postRepository.findAllRelevantPosts(userId);
-          break;
-      }
-      
-      return res.status(200).json(posts);
+      const result = await this.postRepository.findAllRelevantPosts({
+        userId,
+        page,
+        limit
+      });
+
+      return res.status(200).json(result);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });

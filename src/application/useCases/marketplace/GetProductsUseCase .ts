@@ -4,9 +4,9 @@ import { ProductRepository } from "../../../infrastructure/repositories/ProductR
 export class GetProductsUseCase {
     constructor(private productRepository: ProductRepository) {}
   
-    async execute(filters?: any): Promise<any> {
+    async execute(): Promise<any> {
       try {
-        return await this.productRepository.findAll(filters);
+        return await this.productRepository.findAllProducts();
       } catch (error) {
         throw error;
       }
