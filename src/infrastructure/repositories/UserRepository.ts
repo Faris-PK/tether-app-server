@@ -77,5 +77,50 @@ export class UserRepository implements IUserRepository {
 
     return user?.following || [];
   }
+  async searchUsers({ 
+    page = 1, 
+    limit = 8,
+    searchTerm
+  }: {
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+  } = {}): Promise<{
+    users: IUser[];
+    totalUsers: number;
+    totalPages: number;
+  }> {
+    const query = User.find();
+
+    // Search filter for username and email
+    if (searchTerm) {
+      query.find({
+        $or: [
+          { username: { $regex: searchTerm, $options: 'i' } },
+          { email: { $regex: searchTerm, $options: 'i' } }
+        ]
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    // Execute query with pagination
+    const [users, totalUsers] = await Promise.all([
+      query
+        .select('username email profile_picture bio') // Select only necessary fields
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      User.countDocuments(query.getFilter())
+    ]);
+
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    return {
+      users,
+      totalUsers,
+      totalPages
+    };
+  }
   
 }

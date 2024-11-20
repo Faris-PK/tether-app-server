@@ -13,4 +13,13 @@ export interface IUserRepository {
   findPotentialConnections(userId: string, following: Types.ObjectId[], limit: number): Promise<IUser[]>;
   getFollowers(userId: string): Promise<PopulatedUser[]>;
   getFollowing(userId: string): Promise<PopulatedUser[]>;
+  searchUsers(params: {
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+  }): Promise<{
+    users: IUser[];
+    totalUsers: number;
+    totalPages: number;
+  }>;
 }

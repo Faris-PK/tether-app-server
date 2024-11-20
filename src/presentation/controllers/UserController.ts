@@ -326,7 +326,31 @@ export class UserController {
           return res.status(500).json({ message: 'Error processing payment success' });
         }
       }
-      
-      
+
+
+      async searchUsers(req: Request, res: Response) {
+        try {
+          const page = parseInt(req.query.page as string) || 1;
+          const limit = parseInt(req.query.limit as string) || 8;
+          const searchTerm = req.query.searchTerm as string | undefined;
+              
+          const result = await this.userRepository.searchUsers({
+            page,
+            limit,
+            searchTerm,
+          });
+    
+          return res.status(200).json({
+            status: 'success',
+            data: result
+          });
+    
+        } catch (error) {
+          if (error instanceof Error) {
+            return res.status(400).json({ status: 'error', message: error.message });
+          }
+        }
+      }
+   
       
 }
