@@ -120,7 +120,7 @@ export class PostController {
     try {
       const userId = req.userId;
       const postId = req.params.id;
-
+     
       if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
       }

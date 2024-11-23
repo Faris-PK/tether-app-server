@@ -14,6 +14,8 @@ import { UserRepository } from '../../infrastructure/repositories/UserRepository
 import { NotificationRepository } from "../../infrastructure/repositories/NotificationRepository";
 import { StripeService } from '../../infrastructure/services/StripeService';
 import { GetOtherUserProfileUseCase } from "../../application/useCases/user/GetOtherUserProfileUseCase";
+import { SpotifyService } from '../../infrastructure/services/SpotifyService';
+
 
 export class UserController {
     private getUserProfileUseCase: GetUserProfileUseCase;
@@ -27,11 +29,14 @@ export class UserController {
     private getFollowersUseCase: GetFollowersUseCase;
     private getFollowingUseCase: GetFollowingUseCase;
     private getOtherUserProfileUseCase: GetOtherUserProfileUseCase;
+    private spotifyService: SpotifyService;
+
   
     constructor(
       private userRepository: UserRepository,
       private notificationRepository: NotificationRepository,
       private stripeService: StripeService,
+
 
     ) {
         this.getUserProfileUseCase = new GetUserProfileUseCase(userRepository);
@@ -46,6 +51,8 @@ export class UserController {
         this.getFollowersUseCase = new GetFollowersUseCase(userRepository);
         this.getFollowingUseCase = new GetFollowingUseCase(userRepository);
         this.getOtherUserProfileUseCase = new GetOtherUserProfileUseCase(userRepository);
+        this.spotifyService = new SpotifyService();
+
 
             
     }
@@ -351,6 +358,8 @@ export class UserController {
           }
         }
       }
+
+
    
       
 }

@@ -35,6 +35,10 @@ userRouter.delete('/remove-suggestion/:userId', authMiddleware, (req, res) => us
 
 userRouter.post('/create-subscription', authMiddleware, (req, res) => userController.createSubscription(req, res));
 userRouter.get('/success', authMiddleware, (req, res) => userController.handleSuccess(req, res));
-userRouter.get('/search', authMiddleware, (req, res,) => userController.searchUsers(req, res))
+userRouter.get('/search', authMiddleware, (req, res,) => userController.searchUsers(req, res));
+
+
+
+
 
 export default userRouter;      

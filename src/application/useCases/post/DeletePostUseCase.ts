@@ -12,13 +12,18 @@ export class DeletePostUseCase {
 
   async execute(postId: string, userId: string): Promise<void> {
     const existingPost = await this.postRepository.findById(postId);
-
+   // console.log('existingPost : ', existingPost);
+    
     if (!existingPost) {
+      console.log('error  : 1 ');
       throw new Error('Post not found');
+      
     }
 
-    if (existingPost.userId.toString() !== userId) {
+    if (existingPost.userId._id.toString() !== userId) {
+      console.log('error : 2');
       throw new Error('Unauthorized to delete this post');
+      
     }
 
     // Delete associated file if it exists
