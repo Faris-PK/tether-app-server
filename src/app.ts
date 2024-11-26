@@ -34,7 +34,7 @@ app.use('/story', storyRouter)
 const PORT = process.env.PORT || 5000;
 
 // Initialize MailService
-const mailService = new MailService();
+//const mailService = new MailService();
 
 app.listen(PORT, () => {
   connectDB();

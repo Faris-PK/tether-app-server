@@ -48,7 +48,7 @@ export class UserRepository implements IUserRepository {
     return await User.find({
       _id: { $ne: objectId, $nin: following },
     })
-      .select('username profile_picture bio createdAt')
+      .select('username profile_picture bio createdAt premium_status')
       .limit(limit);
   }
 
@@ -107,7 +107,7 @@ export class UserRepository implements IUserRepository {
     // Execute query with pagination
     const [users, totalUsers] = await Promise.all([
       query
-        .select('username email profile_picture bio') // Select only necessary fields
+        .select('username email profile_picture bio premium_status') // Select only necessary fields
         .skip(skip)
         .limit(limit)
         .lean(),

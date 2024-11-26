@@ -20,6 +20,7 @@ export class GetPeopleSuggestionsUseCase {
       mutualFriends: 0, 
       isFollowing: false,
       createdAt: suggestion.createdAt ,
+      premiumStatus:suggestion.premium_status,
     }));
   }
 }

@@ -26,4 +26,4 @@ authRouter.post('/forgot-password', (req, res) => authController.forgotPassword(
 authRouter.post('/reset-password', (req, res) => authController.resetPassword(req, res));
 
 
-export default authRouter;
+export default authRouter; 
