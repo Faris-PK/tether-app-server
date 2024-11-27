@@ -44,4 +44,7 @@ const ProductSchema: Schema = new Schema({
   toObject: { virtuals: true }
 });
 
+ProductSchema.index({ 'location.coordinates': '2dsphere' });
+
+
 export const Product = mongoose.model<IProduct>('Product', ProductSchema);

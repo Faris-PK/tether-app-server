@@ -39,15 +39,16 @@ export class ProductRepository implements IProductRepository {
       .lean();
   }
 
-  async findAll({ 
-    page = 1, 
-    limit = 8, 
+  async findAll({
+    page = 1,
+    limit = 8,
     excludeUserId,
     search,
     minPrice,
     maxPrice,
     category,
-    dateSort
+    dateSort,
+    locationFilter
   }: {
     page: number;
     limit: number;
@@ -57,73 +58,149 @@ export class ProductRepository implements IProductRepository {
     maxPrice?: number;
     category?: string;
     dateSort?: string;
+    locationFilter?: {
+      latitude: number;
+      longitude: number;
+      radius: number;
+    }
   }): Promise<{
     products: IProduct[];
     totalProducts: number;
     totalPages: number;
   }> {
-    const query = Product.find({ isBlocked: false, isApproved: true });
+    try {
+      const query: any = { 
+        isBlocked: false, 
+        isApproved: true 
+      };
+      
+      // Apply filters
+      if (excludeUserId) {
+        query.userId = { $ne: new Types.ObjectId(excludeUserId) };
+      }
   
-    // Apply filters
-    if (excludeUserId) {
-      query.find({ userId: { $ne: excludeUserId } });
-    }
-  
-    // Search filter
-    if (search) {
-      query.find({
-        $or: [
+      // Search filter
+      if (search) {
+        query.$or = [
           { title: { $regex: search, $options: 'i' } },
           { description: { $regex: search, $options: 'i' } }
-        ]
-      });
-    }
+        ];
+      }
   
-    // Price range filter
-    if (minPrice !== undefined && maxPrice !== undefined) {
-      query.find({ 
-        price: { 
+      // Price range filter
+      if (minPrice !== undefined && maxPrice !== undefined) {
+        query.price = { 
           $gte: minPrice, 
           $lte: maxPrice 
-        } 
+        };
+      } else if (minPrice !== undefined) {
+        query.price = { $gte: minPrice };
+      } else if (maxPrice !== undefined) {
+        query.price = { $lte: maxPrice };
+      }
+  
+      // Category filter
+      if (category) {
+        query.category = category;
+      }
+  
+      const aggregationPipeline: any[] = [
+        { $match: query }
+      ];
+  
+      // Location filter
+      if (locationFilter) {
+        const { latitude, longitude, radius } = locationFilter;
+        
+        aggregationPipeline.push({
+          $addFields: {
+            distance: {
+              $multiply: [
+                {
+                  $acos: {
+                    $add: [
+                      { 
+                        $multiply: [
+                          { $sin: { $degreesToRadians: latitude } },
+                          { $sin: { $degreesToRadians: '$location.coordinates.latitude' } }
+                        ]
+                      },
+                      {
+                        $multiply: [
+                          { $cos: { $degreesToRadians: latitude } },
+                          { $cos: { $degreesToRadians: '$location.coordinates.latitude' } },
+                          { $cos: { $degreesToRadians: { $subtract: [longitude, '$location.coordinates.longitude'] } } }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                6371 // Earth's radius in kilometers
+              ]
+            }
+          }
+        });
+  
+        // Filter by radius
+        aggregationPipeline.push({
+          $match: {
+            distance: { $lte: radius }
+          }
+        });
+      }
+  
+      // Sorting
+      if (dateSort === 'newest') {
+        aggregationPipeline.push({ $sort: { createdAt: -1 } });
+      } else if (dateSort === 'oldest') {
+        aggregationPipeline.push({ $sort: { createdAt: 1 } });
+      } else {
+        aggregationPipeline.push({ $sort: { createdAt: -1 } });
+      }
+  
+      // Facet for pagination and total count
+      aggregationPipeline.push({
+        $facet: {
+          products: [
+            { $skip: (page - 1) * limit },
+            { $limit: limit },
+            { 
+              $lookup: {
+                from: 'users',
+                localField: 'userId',
+                foreignField: '_id',
+                as: 'user'
+              }
+            },
+            {
+              $unwind: '$user'
+            },
+            {
+              $project: {
+                'user.password': 0,
+                'user.email': 0
+              }
+            }
+          ],
+          totalProducts: [{ $count: 'count' }]
+        }
       });
-    } else if (minPrice !== undefined) {
-      query.find({ price: { $gte: minPrice } });
-    } else if (maxPrice !== undefined) {
-      query.find({ price: { $lte: maxPrice } });
+  
+      const [results] = await Product.aggregate(aggregationPipeline);
+  
+      const products = results.products;
+      const totalProducts = results.totalProducts[0]?.count || 0;
+      const totalPages = Math.ceil(totalProducts / limit);
+  
+      return {
+        products,
+        totalProducts,
+        totalPages
+      };
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw error;
     }
-  
-    // Category filter
-    if (category) {
-      query.find({ category });
-    }
-  
-    // Sorting
-    if (dateSort === 'newest') {
-      query.sort({ createdAt: -1 });
-    } else if (dateSort === 'oldest') {
-      query.sort({ createdAt: 1 });
-    } else {
-      query.sort({ createdAt: -1 });
-    }
-  
-    const skip = (page - 1) * limit;
-  
-    const [products, totalProducts] = await Promise.all([
-      query
-        .populate('userId', 'username profile_picture')
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Product.countDocuments(query.getFilter())
-    ]);
-  
-    const totalPages = Math.ceil(totalProducts / limit);
-  
-    return {
-      products,
-      totalProducts,
-      totalPages
-    };
   }
-}
+  
+}  

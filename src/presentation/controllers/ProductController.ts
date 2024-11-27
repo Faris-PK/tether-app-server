@@ -154,6 +154,8 @@ export class ProductController {
 
   async getProducts(req: Request, res: Response) {
     try {
+    
+      
       const currentUserId = req.userId;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 8;
@@ -162,8 +164,28 @@ export class ProductController {
       const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice as string) : undefined;
       const category = req.query.category as string | undefined;
       const dateSort = req.query.dateSort as string | undefined;
-  
+      const latitude = req.query.latitude ? parseFloat(req.query.latitude as string) : undefined;
+      const longitude = req.query.longitude ? parseFloat(req.query.longitude as string) : undefined;
+      const radius = req.query.radius ? parseFloat(req.query.radius as string) : undefined;
+      // console.log('userId: ', currentUserId);
+      
+      // console.log(' page', page);
+      // console.log(' limit ',limit);
+      // console.log(' search', search);
+      // console.log(' minPrice ', minPrice);
+      // console.log(' maxPrice ', maxPrice);
+      // console.log(' category', category);
+      // console.log(' dateSort', dateSort);
+      // console.log(' latitude', latitude);
+      // console.log(' longitude', longitude);
+      // console.log(' radius ', radius);
 
+  
+      let locationFilter: { latitude: number; longitude: number; radius: number } | undefined;
+      if (latitude !== undefined && longitude !== undefined && radius !== undefined) {
+        locationFilter = { latitude, longitude, radius };
+      }
+  
       const result = await this.productRepository.findAll({
         page,
         limit,
@@ -172,8 +194,11 @@ export class ProductController {
         minPrice,
         maxPrice,
         category,
-        dateSort
+        dateSort,
+        locationFilter
       });
+   //   console.log('results from market: ', result);
+      
   
       return res.status(200).json(result);
     } catch (error) {
@@ -183,6 +208,7 @@ export class ProductController {
       return res.status(500).json({ message: 'Internal server error' });
     }
   }
+  
   
 
   async getUserProducts(req: Request, res: Response) {

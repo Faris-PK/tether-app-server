@@ -10,6 +10,16 @@ export interface IProductRepository {
     page: number;
     limit: number;
     excludeUserId?: string;
+    search?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    category?: string;
+    dateSort?: string;
+    locationFilter?: {
+      latitude: number;
+      longitude: number;
+      radius: number;
+    }
   }): Promise<{
     products: IProduct[];
     totalProducts: number;

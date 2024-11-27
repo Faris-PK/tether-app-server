@@ -11,6 +11,7 @@ import userRouter from './presentation/routes/UserRoute';
 import postRoutes from './presentation/routes/PostRoutes';
 import productRouter from './presentation/routes/productRoutes';
 import storyRouter from './presentation/routes/storyRoutes';
+import liveStreamRouter from './presentation/routes/LiveStreamRoutes'; 
 dotenv.config();
 
 const app = express();
@@ -29,7 +30,8 @@ app.use('/admin', adminRoutes );
 app.use('/user',userRouter);
 app.use('/posts', postRoutes);
 app.use('/market', productRouter);
-app.use('/story', storyRouter)
+app.use('/story', storyRouter);
+app.use('/livestream', liveStreamRouter);
 
 const PORT = process.env.PORT || 5000;
 
