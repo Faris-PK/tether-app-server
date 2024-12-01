@@ -8,6 +8,7 @@ import { S3Service } from '../../infrastructure/services/S3Service';
 import { authMiddleware } from '../middleware/authMiddleware';
 import { checkUserBlockedMiddleware } from '../middleware/checkUserBlockedMiddleware'; 
 import multer from 'multer';
+import { NotificationRepository } from '../../infrastructure/repositories/NotificationRepository';
 
 
 const postRouter = Router();
@@ -15,8 +16,9 @@ const postRepository = new PostRepository();
 const userRepository = new UserRepository();
 const reportRepository = new ReportRepository();
 const commentRepository = new CommentRepository();
+const notificationRepository = new NotificationRepository
 const s3Service = new S3Service();
-const postController = new PostController(postRepository, s3Service, userRepository,commentRepository, reportRepository);
+const postController = new PostController(postRepository, s3Service, userRepository,commentRepository, reportRepository, notificationRepository);
 const upload = multer({ storage: multer.memoryStorage() });
 
 postRouter.post('/create', authMiddleware, checkUserBlockedMiddleware, upload.single('file'), (req, res) => postController.createPost(req, res));

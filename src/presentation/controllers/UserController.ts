@@ -14,6 +14,7 @@ import { UserRepository } from '../../infrastructure/repositories/UserRepository
 import { NotificationRepository } from "../../infrastructure/repositories/NotificationRepository";
 import { StripeService } from '../../infrastructure/services/StripeService';
 import { GetOtherUserProfileUseCase } from "../../application/useCases/user/GetOtherUserProfileUseCase";
+import { GetUserNotificationsUseCase } from '../../application/useCases/user/GetUserNotificationsUseCase';
 import { SpotifyService } from '../../infrastructure/services/SpotifyService';
 
 
@@ -29,6 +30,7 @@ export class UserController {
     private getFollowersUseCase: GetFollowersUseCase;
     private getFollowingUseCase: GetFollowingUseCase;
     private getOtherUserProfileUseCase: GetOtherUserProfileUseCase;
+    private getUserNotificationsUseCase: GetUserNotificationsUseCase;
     private spotifyService: SpotifyService;
 
   
@@ -50,6 +52,7 @@ export class UserController {
         this.unfollowUserUseCase = new UnfollowUserUseCase(userRepository, notificationRepository);
         this.getFollowersUseCase = new GetFollowersUseCase(userRepository);
         this.getFollowingUseCase = new GetFollowingUseCase(userRepository);
+        this.getUserNotificationsUseCase = new GetUserNotificationsUseCase(notificationRepository);
         this.getOtherUserProfileUseCase = new GetOtherUserProfileUseCase(userRepository);
         this.spotifyService = new SpotifyService();
 
@@ -359,7 +362,34 @@ export class UserController {
         }
       }
 
+      async getUserNotifications(req: Request, res: Response) {
+        try {
+            const userId = req.userId;
+            const page = parseInt(req.query.page as string) || 1;
+            const limit = parseInt(req.query.limit as string) || 10;
 
-   
+            if (!userId) {
+                return res.status(400).json({ message: 'User ID is required' });
+            }
+
+            const result = await this.getUserNotificationsUseCase.execute(userId, page, limit);
+
+            return res.status(200).json({
+                success: true,
+                data: result.notifications,
+                pagination: {
+                    currentPage: page,
+                    totalPages: result.totalPages,
+                    totalNotifications: result.totalNotifications
+                }
+            });
+        } catch (error) {
+            if (error instanceof Error) {
+                return res.status(400).json({ message: error.message });
+            }
+            return res.status(500).json({ message: 'An unexpected error occurred' });
+        }
+    }
+
       
 }

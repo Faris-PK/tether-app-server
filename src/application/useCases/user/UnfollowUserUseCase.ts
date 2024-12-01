@@ -21,20 +21,22 @@ export class UnfollowUserUseCase {
       const targetObjectId = new Types.ObjectId(targetUserId);
       const followerObjectId = new Types.ObjectId(followerId);
   
+      // Remove the follow relationship
       follower.following = follower.following.filter(id => !id.equals(targetObjectId));
       targetUser.followers = targetUser.followers.filter(id => !id.equals(followerObjectId));
   
+      // Find and delete the follow notification
+      await this.notificationRepository.deleteFollowNotification(
+        targetObjectId, 
+        followerObjectId
+      );
+  
+      // Save the updated user documents
       await Promise.all([
         this.userRepository.save(follower),
-        this.userRepository.save(targetUser),
-        // this.notificationRepository.create({
-        //   recipient: targetObjectId,
-        //   sender: followerObjectId,
-        //   type: 'unfollow',
-        //   content: `${follower.username} unfollowed you`
-        // })
+        this.userRepository.save(targetUser)
       ]);
   
       return { success: true };
     }
-  }
+}

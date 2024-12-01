@@ -11,7 +11,7 @@ export class CreateProductUseCase {
 
   async execute(productData: CreateProductDTO, files: Express.Multer.File[]): Promise<any> {
     try {
-      console.log('hggsdjhg');
+     // console.log('hggsdjhg');
       
       // Validate location data
       if (!productData.location?.name || 

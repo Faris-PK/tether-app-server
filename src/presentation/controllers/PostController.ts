@@ -5,15 +5,16 @@ import { PostRepository } from '../../infrastructure/repositories/PostRepository
 import { S3Service } from '../../infrastructure/services/S3Service';
 import { CreatePostDTO } from '../../application/dto/CreatePostDTO';
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
-import { LikePostUseCase } from '../../application/useCases/post/LikePostUseCase';
 import { UpdatePostUseCase } from '../../application/useCases/post/UpdatePostUseCase';
 import { ReportPostUseCase } from '../../application/useCases/post/ReportPostUseCase';
 import { ReportRepository } from '../../infrastructure/repositories/ReportRepository';
-import { CreateCommentUseCase } from '../../application/useCases/post/CreateCommentUseCase';
 import { UpdateCommentUseCase } from '../../application/useCases/post/UpdateCommentUseCase';
 import { GetCommentsUseCase } from '../../application/useCases/post/GetCommentsUseCase';
 import { DeleteCommentUseCase } from '../../application/useCases/post/DeleteCommentUseCase';
 import { CommentRepository } from '../../infrastructure/repositories/CommentRepository';
+import { NotificationRepository } from '../../infrastructure/repositories/NotificationRepository';
+import { LikePostNotificationUseCase } from '../../application/useCases/post/LikePostNotificationUseCase';
+import { CreateCommentNotificationUseCase } from '../../application/useCases/post/CreateCommentNotificationUseCase';
 
 
 
@@ -21,29 +22,42 @@ export class PostController {
   private createPostUseCase: CreatePostUseCase;
   private deletePostUseCase: DeletePostUseCase;
   private updatePostUseCase: UpdatePostUseCase;
-  private likePostUseCase: LikePostUseCase;
   private reportPostUseCase: ReportPostUseCase;
-  private createCommentUseCase: CreateCommentUseCase;
   private getCommentsUseCase: GetCommentsUseCase;
   private updateCommentUseCase: UpdateCommentUseCase;
   private deleteCommentUseCase: DeleteCommentUseCase;
+  private likePostNotificationUseCase: LikePostNotificationUseCase;
+  private createCommentNotificationUseCase: CreateCommentNotificationUseCase; 
+
 
   constructor(
     private postRepository: PostRepository,
     private s3Service: S3Service,
     private userRepository: UserRepository,
     private commentRepository: CommentRepository,
-    private reportRepository: ReportRepository
+    private reportRepository: ReportRepository,
+    private notificationRepository: NotificationRepository
+
   ) {
     this.createPostUseCase = new CreatePostUseCase(postRepository, s3Service);
     this.deletePostUseCase = new DeletePostUseCase(postRepository, s3Service, userRepository);
     this.updatePostUseCase = new UpdatePostUseCase(postRepository);
-    this.likePostUseCase = new LikePostUseCase(postRepository);
     this.reportPostUseCase = new ReportPostUseCase(reportRepository, postRepository);
-    this.createCommentUseCase = new CreateCommentUseCase(commentRepository, postRepository);
     this.getCommentsUseCase = new GetCommentsUseCase(commentRepository);
     this.updateCommentUseCase = new UpdateCommentUseCase(commentRepository);
     this.deleteCommentUseCase = new DeleteCommentUseCase(commentRepository);
+    this.likePostNotificationUseCase = new LikePostNotificationUseCase(
+      postRepository, 
+      notificationRepository, 
+      userRepository
+    );
+    this.createCommentNotificationUseCase = new CreateCommentNotificationUseCase(
+      commentRepository,
+      postRepository,
+      notificationRepository,
+      userRepository
+    );
+    
   }
 
   async createPost(req: Request, res: Response) {
@@ -164,7 +178,8 @@ export class PostController {
         return res.status(400).json({ message: 'User ID is required' });
       }
 
-      const updatedPost = await this.likePostUseCase.execute(postId, userId);
+      const updatedPost = await this.likePostNotificationUseCase.execute(postId, userId);
+
       return res.status(200).json(updatedPost);
     } catch (error) {
       if (error instanceof Error) {
@@ -233,8 +248,8 @@ export class PostController {
         return res.status(400).json({ success: false, message: 'Content is required' });
       }
 
-      const comment = await this.createCommentUseCase.execute(postId, userId, content);
-      
+      const comment = await this.createCommentNotificationUseCase.execute(postId, userId, content);
+
       return res.status(201).json({
         success: true,
         message: 'Comment created successfully',
@@ -275,6 +290,40 @@ export class PostController {
     }
   }
 
+async createReplyComment(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const { postId, parentCommentId } = req.params;
+      const { content } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ success: false, message: 'User ID is required' });
+      }
+
+      if (!content) {
+        return res.status(400).json({ success: false, message: 'Content is required' });
+      }
+
+      const comment = await this.createCommentNotificationUseCase.execute(
+        postId, 
+        userId, 
+        content, 
+        parentCommentId
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: 'Reply created successfully',
+        data: comment
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ success: false, message: error.message });
+      }
+    }
+  }
+
+
   async deleteComment(req: Request, res: Response) {
     try {
       const userId = req.userId;
@@ -285,43 +334,13 @@ export class PostController {
       }
 
       await this.deleteCommentUseCase.execute(commentId, userId);
-      
+
+      // Delete associated notifications
+      await this.notificationRepository.deleteCommentNotification(commentId);
+
       return res.status(200).json({
         success: true,
         message: 'Comment deleted successfully'
-      });
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({ success: false, message: error.message });
-      }
-    }
-  }
-
-  async createReplyComment(req: Request, res: Response) {
-    try {
-      const userId = req.userId;
-      const { postId, parentCommentId } = req.params;
-      const { content } = req.body;
-  
-      if (!userId) {
-        return res.status(400).json({ success: false, message: 'User ID is required' });
-      }
-  
-      if (!content) {
-        return res.status(400).json({ success: false, message: 'Content is required' });
-      }
-  
-      const comment = await this.createCommentUseCase.execute(
-        postId, 
-        userId, 
-        content, 
-        parentCommentId
-      );
-      
-      return res.status(201).json({
-        success: true,
-        message: 'Reply created successfully',
-        data: comment
       });
     } catch (error) {
       if (error instanceof Error) {
