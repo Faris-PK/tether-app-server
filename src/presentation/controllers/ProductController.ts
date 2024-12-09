@@ -167,18 +167,6 @@ export class ProductController {
       const latitude = req.query.latitude ? parseFloat(req.query.latitude as string) : undefined;
       const longitude = req.query.longitude ? parseFloat(req.query.longitude as string) : undefined;
       const radius = req.query.radius ? parseFloat(req.query.radius as string) : undefined;
-      // console.log('userId: ', currentUserId);
-      
-      // console.log(' page', page);
-      // console.log(' limit ',limit);
-      // console.log(' search', search);
-      // console.log(' minPrice ', minPrice);
-      // console.log(' maxPrice ', maxPrice);
-      // console.log(' category', category);
-      // console.log(' dateSort', dateSort);
-      // console.log(' latitude', latitude);
-      // console.log(' longitude', longitude);
-      // console.log(' radius ', radius);
 
   
       let locationFilter: { latitude: number; longitude: number; radius: number } | undefined;
@@ -197,10 +185,11 @@ export class ProductController {
         dateSort,
         locationFilter
       });
-   //   console.log('results from market: ', result);
-      
+      console.log('results : ', result);
   
       return res.status(200).json(result);
+      
+      
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });

@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 import { PostRepository } from '../../../infrastructure/repositories/PostRepository';
 import { NotificationRepository } from '../../../infrastructure/repositories/NotificationRepository';
 import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
+import { SocketService } from '../../../infrastructure/services/SocketService';
 import { IPost } from '../../../domain/entities/Post';
 
 export class LikePostNotificationUseCase {
@@ -31,13 +32,15 @@ export class LikePostNotificationUseCase {
       } else {
         // Post was just liked, so create a like notification
         const currentUser = await this.userRepository.findById(userId);
-        await this.notificationRepository.create({
+        const notification = await this.notificationRepository.create({
           recipient: new Types.ObjectId(postOwner),
           sender: new Types.ObjectId(userId),
           type: 'like',
           postId: new Types.ObjectId(postId),
           content: `${currentUser?.username} liked your post`
         });
+        SocketService.sendNotificationToUser(postOwner, notification);
+
       }
     }
 

@@ -3,6 +3,7 @@ import { CommentRepository } from '../../../infrastructure/repositories/CommentR
 import { PostRepository } from '../../../infrastructure/repositories/PostRepository';
 import { NotificationRepository } from '../../../infrastructure/repositories/NotificationRepository';
 import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
+import { SocketService } from '../../../infrastructure/services/SocketService'; 
 import { IComment } from '../../../domain/entities/Comment';
 
 export class CreateCommentNotificationUseCase {
@@ -43,9 +44,9 @@ export class CreateCommentNotificationUseCase {
 
     const currentUser = await this.userRepository.findById(userId);
 
-    // Notification logic for comment
+    // Only create notification if the comment is not on the user's own post
     if (post.userId.toString() !== userId) {
-      await this.notificationRepository.create({
+      const postNotification = await this.notificationRepository.create({
         recipient: post.userId,
         sender: new Types.ObjectId(userId),
         type: 'comment',
@@ -53,11 +54,14 @@ export class CreateCommentNotificationUseCase {
         commentId: comment._id as Types.ObjectId,
         content: `${currentUser?.username} commented on your post`
       });
+
+      // Send socket notification for post comment
+      SocketService.sendNotificationToUser(post.userId._id.toString(), postNotification);
     }
 
-    // Notification logic for reply comment
+    // Only create notification for reply if it's not a reply to the user's own comment
     if (parentCommentId && parentComment && parentComment.userId.toString() !== userId) {
-      await this.notificationRepository.create({
+      const replyNotification = await this.notificationRepository.create({
         recipient: parentComment.userId,
         sender: new Types.ObjectId(userId),
         type: 'reply_comment',
@@ -65,6 +69,9 @@ export class CreateCommentNotificationUseCase {
         commentId: comment._id as Types.ObjectId,
         content: `${currentUser?.username} replied to your comment`
       });
+
+      // Send socket notification for comment reply
+      SocketService.sendNotificationToUser(parentComment.userId._id.toString(), replyNotification);
     }
 
     return comment;

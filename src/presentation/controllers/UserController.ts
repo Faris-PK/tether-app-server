@@ -343,6 +343,7 @@ export class UserController {
           const page = parseInt(req.query.page as string) || 1;
           const limit = parseInt(req.query.limit as string) || 8;
           const searchTerm = req.query.searchTerm as string | undefined;
+              console.log('searched: ', searchTerm);
               
           const result = await this.userRepository.searchUsers({
             page,
