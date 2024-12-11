@@ -4,13 +4,15 @@ import { UserRepository } from '../../infrastructure/repositories/UserRepository
 import { User } from '../../domain/entities/User';
 import jwt from 'jsonwebtoken';
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const client = new  OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export class GoogleAuthController {
   constructor(private userRepository: UserRepository) {}
 
   async googleLogin(req: Request, res: Response) {
     const { token } = req.body;
+   // console.log('google token: ', token);
+    
 
     try {
       const ticket = await client.verifyIdToken({

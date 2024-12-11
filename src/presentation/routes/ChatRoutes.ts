@@ -1,15 +1,21 @@
 import express from 'express';
-import { ChatController } from '../controllers/ChatController';
-import { authMiddleware } from '../middleware/authMiddleware';
+import { ChatController } from '../../presentation/controllers/ChatController';
+import { ChatRepository } from '../../infrastructure/repositories/ChatRepository';
+import { authMiddleware } from '../../presentation/middleware/authMiddleware';
 
 const chatRouter = express.Router();
-const chatController = new ChatController();
+const chatRepository = new ChatRepository();
+const chatController = new ChatController(chatRepository);
 
-// Get user's chat list
-chatRouter.get('/chats', authMiddleware, (req, res) => chatController.getUserChats(req, res));
+chatRouter.use(authMiddleware);
 
-// Get messages for a specific chat
-chatRouter.get('/messages/:chatId', authMiddleware, (req, res) => chatController.getChatMessages(req, res));
-chatRouter.post('/send-message', authMiddleware, (req, res) => chatController.sendMessage(req, res));
+chatRouter.get('/contacts', (req, res) => chatController.getContacts(req, res));
+chatRouter.get('/messages/:contactId', (req, res) => chatController.getMessages(req, res));
+chatRouter.post('/send', (req, res) => chatController.sendMessage(req, res));
+chatRouter.post('/read', (req, res) => chatController.markMessagesAsRead(req, res));
+
+chatRouter.get('/search', (req, res) => chatController.searchUsers(req, res));
+chatRouter.post('/start-chat', (req, res) => chatController.startNewChat(req, res));
+
 
 export default chatRouter;
