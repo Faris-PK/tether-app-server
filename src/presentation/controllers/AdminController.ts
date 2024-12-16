@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { AdminLoginUseCase } from '../../application/useCases/admin/AdminLoginUseCase';
-import { BlockUserUseCase } from '../../application/useCases/admin/BlockUserUseCase';
-import { UnblockUserUseCase } from '../../application/useCases/admin/UnblockUserUseCase';
 import { AdminRepository } from '../../infrastructure/repositories/AdminRepository';
 import { UserRepository } from '../../infrastructure/repositories/UserRepository';
 import { GetUsersUseCase } from '../../application/useCases/admin/GetUsersUseCase';
@@ -17,8 +15,6 @@ import { ProductRepository } from '../../infrastructure/repositories/ProductRepo
 
 export class AdminController {
   private adminLoginUseCase: AdminLoginUseCase;
-  private blockUserUseCase: BlockUserUseCase;
-  private unblockUserUseCase: UnblockUserUseCase;
   private getUsersUseCase: GetUsersUseCase;
   private getPostsUseCase: GetPostsUseCase;
   private blockPostUseCase: BlockPostUseCase;
@@ -26,8 +22,6 @@ export class AdminController {
   private getAllReportsUseCase: GetAllReportsUseCase;
   private updateReportStatusUseCase: UpdateReportStatusUseCase;
   private getProductsUseCase : GetProductsUseCase;
-
-
 
 
   constructor(
@@ -38,23 +32,19 @@ export class AdminController {
     private productRepository: ProductRepository
   ) {
     this.adminLoginUseCase = new AdminLoginUseCase(adminRepository);
-    this.blockUserUseCase = new BlockUserUseCase(userRepository);
-    this.unblockUserUseCase = new UnblockUserUseCase(userRepository);
-    this.getUsersUseCase = new GetUsersUseCase(userRepository);
-    this.getPostsUseCase = new GetPostsUseCase(postRepository);
+    this.getUsersUseCase = new GetUsersUseCase(adminRepository);
+    this.getPostsUseCase = new GetPostsUseCase(adminRepository);
     this.blockPostUseCase = new BlockPostUseCase(postRepository);
     this.unblockPostUseCase = new UnblockPostUseCase(postRepository);
     this.getAllReportsUseCase = new GetAllReportsUseCase(reportRepository);
     this.updateReportStatusUseCase = new UpdateReportStatusUseCase(reportRepository);
-    this.getProductsUseCase = new GetProductsUseCase(productRepository)
+    this.getProductsUseCase = new GetProductsUseCase(adminRepository)
 
   }
 
   async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
-     // console.log('From body...',req.body);
-      
       const { accessToken, refreshToken, admin } = await this.adminLoginUseCase.execute({ email, password });
 
       res.cookie('adminAccessToken', accessToken, { httpOnly: true, maxAge: 15 * 60 * 1000 });
@@ -75,84 +65,127 @@ export class AdminController {
     return res.status(200).json({ message: 'Admin logged out successfully' });
   }
 
-  async blockUser(req: Request, res: Response) {
-    try {
-      const { userId } = req.params;
-      await this.blockUserUseCase.execute(userId);
-      return res.status(200).json({ message: 'User blocked successfully' });
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
-      }
-    }
-  }
-
-  async unblockUser(req: Request, res: Response) {
-    try {
-      const { userId } = req.params;
-      await this.unblockUserUseCase.execute(userId);
-      return res.status(200).json({ message: 'User unblocked successfully' });
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
-      }
-    }
-  }
   async getUsers(req: Request, res: Response) {
     try {
-      const users = await this.getUsersUseCase.execute();
+      const { 
+        page = 1, 
+        limit = 10, 
+        searchTerm = '', 
+        sortField = 'createdAt', 
+        sortOrder = 'desc' 
+      } = req.query;
+
+      const users = await this.getUsersUseCase.execute({
+        page: Number(page),
+        limit: Number(limit),
+        searchTerm: searchTerm as string,
+        sortField: sortField as string,
+        sortOrder: sortOrder as 'asc' | 'desc'
+      });
+
       return res.status(200).json(users);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  }
+
+  async toggleUserBlock(req: Request, res: Response) {
+    try {
+      const { userId } = req.params;
+      const { block } = req.body;
+  
+      if (typeof block !== 'boolean') {
+        return res.status(400).json({ message: 'Invalid block status' });
+      }
+
+      const user = await this.adminRepository.toggleUserBlockStatus(userId, block);
+      
+      return res.status(200).json({ 
+        message: block ? 'User blocked successfully' : 'User unblocked successfully',
+        user 
+      });
+    } catch (error) {
+      if (error instanceof Error) {
+        return res.status(400).json({ message: error.message });
+      }
+      return res.status(500).json({ message: 'Internal server error' });
     }
   }
 
   async getPosts(req: Request, res: Response) {
     try {
-      const posts = await this.getPostsUseCase.execute();
+      const { 
+        page = 1, 
+        limit = 10, 
+        searchTerm = '', 
+        sortField = 'createdAt', 
+        sortOrder = 'desc' 
+      } = req.query;
+
+      const posts = await this.getPostsUseCase.execute({
+        page: Number(page),
+        limit: Number(limit),
+        searchTerm: searchTerm as string,
+        sortField: sortField as string,
+        sortOrder: sortOrder as 'asc' | 'desc'
+      });
+
       return res.status(200).json(posts);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
+      return res.status(500).json({ message: 'Internal server error' });
     }
   }
 
-  async blockPost(req: Request, res: Response) {
+  async togglePostBlock(req: Request, res: Response) {
     try {
       const { postId } = req.params;
-      await this.blockPostUseCase.execute(postId);
-      return res.status(200).json({ message: 'Post blocked successfully' });
+      const { block } = req.body;
+      console.log(postId, block);
+      
+  
+      if (typeof block !== 'boolean') {
+        return res.status(400).json({ message: 'Invalid block status' });
+      }
+
+      const user = await this.adminRepository.togglePostBlockStatus(postId, block);
+      
+      return res.status(200).json({ 
+        message: block ? 'User blocked successfully' : 'User unblocked successfully',
+        user 
+      });
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
-    }
-  }
-
-  async unblockPost(req: Request, res: Response) {
-    try {
-      const { postId } = req.params;
-      await this.unblockPostUseCase.execute(postId);
-      return res.status(200).json({ message: 'Post unblocked successfully' });
-    } catch (error) {
-      if (error instanceof Error) {
-        return res.status(400).json({ message: error.message });
-      }
+      return res.status(500).json({ message: 'Internal server error' });
     }
   }
 
   async getAllReports(req: Request, res: Response) {
     try {
-      const filter = req.query.filter as string;
-      const reports = await this.getAllReportsUseCase.execute(filter);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
+      const filter = req.query.filter as string || 'all';
+      const search = req.query.search as string || '';
+
+      const reports = await this.getAllReportsUseCase.execute({
+        page,
+        limit,
+        filter,
+        search
+      });
       return res.status(200).json(reports);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(500).json({ message: error.message });
       }
+      return res.status(500).json({ message: 'An unknown error occurred' });
     }
   }
 
@@ -169,17 +202,33 @@ export class AdminController {
       }
     }
   }
-
   async getAllProducts(req: Request, res: Response) {
     try {
-      const products = await this.getProductsUseCase.execute();
-    //  console.log('products : ', products);
-      
+      const { 
+        page, 
+        limit, 
+        search, 
+        sortOrder, 
+        category, 
+        minPrice, 
+        maxPrice 
+      } = req.query;
+  
+      const products = await this.getProductsUseCase.execute({
+        page: page ? parseInt(page as string) : undefined,
+        limit: limit ? parseInt(limit as string) : undefined,
+        search: search as string,
+        sortOrder: sortOrder as 'asc' | 'desc',
+        category: category as string,
+        minPrice: minPrice ? parseFloat(minPrice as string) : undefined,
+        maxPrice: maxPrice ? parseFloat(maxPrice as string) : undefined
+      });      
       return res.status(200).json(products);
     } catch (error) {
       if (error instanceof Error) {
         return res.status(400).json({ message: error.message });
       }
+      return res.status(500).json({ message: 'Internal server error' });
     }
   }
 

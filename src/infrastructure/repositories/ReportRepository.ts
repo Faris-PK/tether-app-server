@@ -28,14 +28,6 @@ export class ReportRepository {
     });
   }
 
-  // async updateStatus(reportId: string, status: 'pending' | 'reviewed' | 'resolved'): Promise<IReport | null> {
-  //   return await Report.findByIdAndUpdate(
-  //     reportId,
-  //     { status },
-  //     { new: true }
-  //   );
-  // }
-
   async findAllWithDetails(): Promise<IReport[]> {
     return await Report.find()
       .populate({
@@ -77,5 +69,30 @@ export class ReportRepository {
       },
       { path: 'reportedBy', select: 'username' }
     ]);
+  }
+
+  async countReports(filterConditions: any = {}): Promise<number> {
+    return await Report.countDocuments(filterConditions);
+  }
+
+  async findReportsWithPagination(options: {
+    skip: number;
+    limit: number;
+    filterConditions?: any;
+  }): Promise<IReport[]> {
+    const { skip, limit, filterConditions = {} } = options;
+
+    return await Report.find(filterConditions)
+      .populate({
+        path: 'postId',
+        populate: {
+          path: 'userId',
+          select: 'username profile_picture'
+        }
+      })
+      .populate('reportedBy', 'username')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
   }
 }

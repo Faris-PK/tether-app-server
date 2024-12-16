@@ -119,7 +119,7 @@ export class ProductController {
         files
       );
 
-      console.log(' updatedProduct : ', updatedProduct);
+     // console.log(' updatedProduct : ', updatedProduct);
       
       
       return res.status(200).json(updatedProduct);
@@ -185,7 +185,7 @@ export class ProductController {
         dateSort,
         locationFilter
       });
-      console.log('results : ', result);
+      //console.log('results : ', result);
   
       return res.status(200).json(result);
       

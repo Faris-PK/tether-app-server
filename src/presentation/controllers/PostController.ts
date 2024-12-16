@@ -193,9 +193,9 @@ export class PostController {
       const userId = req.userId;
       const postId = req.params.id;
       const { reason } = req.body;
-      console.log( 'userId : ', userId);
-      console.log( 'postId : ', postId);
-      console.log( 'reason : ', reason);
+    //  console.log( 'userId : ', userId);
+    //   console.log( 'postId : ', postId);
+     // console.log( 'reason : ', reason);
       
 
       if (!userId) {

@@ -1,4 +1,3 @@
-
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
@@ -16,45 +15,39 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
     return res.status(401).json({ message: 'No tokens provided' });
   }
 
-
-  if (accessToken) {
-    try {
-      const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET as string) as DecodedJwt;
-      req.userId = decoded.userId;
-      return next();
-    } catch (error) {
-
-    }
-  }
-
-
-  if (!refreshToken) {
-    return res.status(401).json({ message: 'Access token expired and no refresh token provided' });
-  }
-
   try {
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string) as DecodedJwt;
-    
+    const decodedAccessToken = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET as string) as DecodedJwt;
+    req.userId = decodedAccessToken.userId;
+    return next();
 
-    const newAccessToken = jwt.sign(
-      { userId: decoded.userId },
-      process.env.JWT_ACCESS_SECRET as string,
-      { expiresIn: '15m' }
-    );
+  } catch (accessTokenError) {.000
 
-    res.cookie('accessToken', newAccessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', 
-      maxAge: 15 * 60 * 1000 // 15 minutes
-    });
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Access token expired and no refresh token provided' });
+    }
 
-    req.userId = decoded.userId;
-    
-    next();
-  } catch (error) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
-    return res.status(403).json({ message: 'Invalid refresh token' });
+    try {
+      const decodedRefreshToken = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET as string) as DecodedJwt;
+      
+      const newAccessToken = jwt.sign(
+        { userId: decodedRefreshToken.userId },
+        process.env.JWT_ACCESS_SECRET as string,
+        { expiresIn: '15m' }
+      );
+
+      res.cookie('accessToken', newAccessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 15 * 60 * 1000
+      });
+
+      req.userId = decodedRefreshToken.userId;
+      return next();
+    } catch (refreshTokenError) {
+      res.clearCookie('accessToken');
+      res.clearCookie('refreshToken');
+      return res.status(403).json({ message: 'Invalid refresh token' });
+    }
   }
 };

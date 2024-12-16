@@ -1,14 +1,24 @@
-import { UserRepository } from '../../../infrastructure/repositories/UserRepository';
+import { AdminRepository } from '../../../infrastructure/repositories/AdminRepository';
 import { IUser } from '../../../domain/entities/User';
 
 export class GetUsersUseCase {
-  private userRepository: UserRepository;
+  private adminRepository: AdminRepository;
 
-  constructor(userRepository: UserRepository) {
-    this.userRepository = userRepository;
+  constructor(adminRepository: AdminRepository) {
+    this.adminRepository = adminRepository;
   }
 
-  async execute(): Promise<IUser[]> {
-    return await this.userRepository.findAll();
+  async execute(params?: {
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+    sortField?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{
+    users: IUser[];
+    totalUsers: number;
+    totalPages: number;
+  }> {
+    return await this.adminRepository.findAllUsers(params);
   }
 }

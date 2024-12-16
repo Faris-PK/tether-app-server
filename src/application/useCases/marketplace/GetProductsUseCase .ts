@@ -1,14 +1,26 @@
 import { IProductRepository } from "../../../domain/interfaces/IProductRepository";
-import { ProductRepository } from "../../../infrastructure/repositories/ProductRepository";
+import { AdminRepository } from "../../../infrastructure/repositories/AdminRepository";
 
 export class GetProductsUseCase {
-    constructor(private productRepository: ProductRepository) {}
-  
-    async execute(): Promise<any> {
-      try {
-        return await this.productRepository.findAllProducts();
-      } catch (error) {
-        throw error;
-      }
+  constructor(private adminRepository: AdminRepository) {}
+
+  async execute(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    sortOrder?: 'asc' | 'desc';
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+  }): Promise<{
+    products: any[];
+    totalPages: number;
+    totalProducts: number;
+  }> {
+    try {
+      return await this.adminRepository.findAllProducts(params);
+    } catch (error) {
+      throw error;
     }
   }
+}

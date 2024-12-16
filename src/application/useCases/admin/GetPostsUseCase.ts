@@ -1,14 +1,24 @@
-import { PostRepository } from "../../../infrastructure/repositories/PostRepository";
+import { AdminRepository } from '../../../infrastructure/repositories/AdminRepository';
+import { IPost } from '../../../domain/entities/Post';
 
 export class GetPostsUseCase {
-    constructor(private postRepository: PostRepository) {}
-  
-    async execute() {
-      const posts = await this.postRepository.findAllPosts();
-      return posts.map(post => ({
-        ...post,
-        comments: post.comments?.length || 0,
-        likes: post.likes?.length || 0
-      }));
-    }
+  private adminRepository: AdminRepository;
+
+  constructor(adminRepository: AdminRepository) {
+    this.adminRepository = adminRepository;
   }
+
+  async execute(params?: {
+    page?: number;
+    limit?: number;
+    searchTerm?: string;
+    sortField?: string;
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<{
+    posts: IPost[];
+    totalPosts: number;
+    totalPages: number;
+  }> {
+    return await this.adminRepository.findAllPosts(params);
+  }
+}
