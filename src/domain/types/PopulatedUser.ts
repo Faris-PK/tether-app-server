@@ -1,5 +1,4 @@
 import { Types } from 'mongoose';
-import { IUser } from '../entities/User';
 
 export interface PopulatedUser {
   _id: Types.ObjectId;
@@ -8,7 +7,12 @@ export interface PopulatedUser {
   bio?: string;
 }
 
-export interface UserWithPopulatedConnections extends IUser {
+export interface UserWithPopulatedConnections {
+  _id: Types.ObjectId;
+  username: string;
+  email: string;
+  profile_picture: string;
+  bio?: string;
   followers: PopulatedUser[];
   following: PopulatedUser[];
 }

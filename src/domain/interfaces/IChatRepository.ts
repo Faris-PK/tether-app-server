@@ -1,4 +1,4 @@
-import { IMessage, IConversation } from '../../domain/entities/ChatMessage';
+import { IMessage, IChat } from '../../domain/entities/ChatMessage';
 
 export interface IChatRepository {
   createMessage(
@@ -6,7 +6,7 @@ export interface IChatRepository {
     receiverId: string, 
     messageText: string
   ): Promise<IMessage>;
-  getConversationsForUser(userId: string): Promise<IConversation[]>;
+  getConversationsForUser(userId: string): Promise<IChat[]>;
 
   getMessagesBetweenUsers(userId: string, contactId: string): Promise<IMessage[]>;
   markMessagesAsRead(senderId: string, receiverId: string): Promise<void>;

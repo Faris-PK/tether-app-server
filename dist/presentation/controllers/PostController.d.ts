@@ -1,0 +1,38 @@
+import { Request, Response } from 'express';
+import { PostRepository } from '../../infrastructure/repositories/PostRepository';
+import { S3Service } from '../../infrastructure/services/S3Service';
+import { UserRepository } from '../../infrastructure/repositories/UserRepository';
+import { ReportRepository } from '../../infrastructure/repositories/ReportRepository';
+import { CommentRepository } from '../../infrastructure/repositories/CommentRepository';
+import { NotificationRepository } from '../../infrastructure/repositories/NotificationRepository';
+export declare class PostController {
+    private postRepository;
+    private s3Service;
+    private userRepository;
+    private commentRepository;
+    private reportRepository;
+    private notificationRepository;
+    private createPostUseCase;
+    private deletePostUseCase;
+    private updatePostUseCase;
+    private reportPostUseCase;
+    private getCommentsUseCase;
+    private updateCommentUseCase;
+    private deleteCommentUseCase;
+    private likePostNotificationUseCase;
+    private createCommentNotificationUseCase;
+    constructor(postRepository: PostRepository, s3Service: S3Service, userRepository: UserRepository, commentRepository: CommentRepository, reportRepository: ReportRepository, notificationRepository: NotificationRepository);
+    createPost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    getPostsForHome(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    getPostsForProfile(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    deletePost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    updatePost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    likePost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    reportPost(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    getComments(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    createComment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    updateComment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    createReplyComment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    deleteComment(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    getSinglePost(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+}

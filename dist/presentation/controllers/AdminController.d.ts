@@ -1,0 +1,33 @@
+import { Request, Response } from 'express';
+import { AdminRepository } from '../../infrastructure/repositories/AdminRepository';
+import { UserRepository } from '../../infrastructure/repositories/UserRepository';
+import { PostRepository } from '../../infrastructure/repositories/PostRepository';
+import { ReportRepository } from '../../infrastructure/repositories/ReportRepository';
+import { ProductRepository } from '../../infrastructure/repositories/ProductRepository';
+export declare class AdminController {
+    private adminRepository;
+    private userRepository;
+    private postRepository;
+    private reportRepository;
+    private productRepository;
+    private adminLoginUseCase;
+    private getUsersUseCase;
+    private getPostsUseCase;
+    private blockPostUseCase;
+    private unblockPostUseCase;
+    private getAllReportsUseCase;
+    private updateReportStatusUseCase;
+    private getProductsUseCase;
+    constructor(adminRepository: AdminRepository, userRepository: UserRepository, postRepository: PostRepository, reportRepository: ReportRepository, productRepository: ProductRepository);
+    login(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    logout(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    getUsers(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    toggleUserBlock(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    getPosts(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    togglePostBlock(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    getAllReports(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    updateReportStatus(req: Request, res: Response): Promise<Response<any, Record<string, any>> | undefined>;
+    getAllProducts(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    approveProduct(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+    updateProductStatus(req: Request, res: Response): Promise<Response<any, Record<string, any>>>;
+}

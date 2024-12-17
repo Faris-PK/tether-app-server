@@ -1,4 +1,3 @@
-import { IProductRepository } from "../../../domain/interfaces/IProductRepository";
 import { AdminRepository } from "../../../infrastructure/repositories/AdminRepository";
 
 export class GetProductsUseCase {
