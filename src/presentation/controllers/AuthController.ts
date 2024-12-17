@@ -79,10 +79,22 @@ export class AuthController {
     try {
       const { email, password } = req.body;
       const { accessToken, refreshToken, user } = await this.loginUserUseCase.execute({ email, password });
-    
-      res.cookie('accessToken', accessToken, { httpOnly: true, maxAge: 15 * 60 * 1000 });
-      res.cookie('refreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
-
+      
+      // Set cookies with production flags
+      res.cookie('accessToken', accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production', // Enable secure cookies in production
+        sameSite: 'strict', // Prevent CSRF attacks
+        maxAge: 15 * 60 * 1000, // 15 minutes
+      });
+  
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+  
       return res.status(200).json({ message: 'Login successful', user });
     } catch (error) {
       if (error instanceof Error) {
