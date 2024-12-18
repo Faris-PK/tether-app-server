@@ -93,7 +93,6 @@ export class AuthController {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         sameSite: 'none', 
         secure: true,
-        domain: process.env.COOKIE_DOMAIN, // Optional: set your domain
         path: '/'
       });
   
