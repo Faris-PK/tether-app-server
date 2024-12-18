@@ -24,4 +24,8 @@ export class SocketService {
     const socketManager = SocketManager.getInstance();
     socketManager.emitToUser(receiverId, 'new_message', message);
   }
+  static getOnlineUsers(): string[] {
+    const socketManager = SocketManager.getInstance();
+    return socketManager.getOnlineUsers();
+  }
 }
