@@ -101,4 +101,35 @@ export class ChatController {
       res.status(500).json({ message: 'Failed to start new chat' });
     }
   }
+
+  async deleteMessage(req: Request, res: Response) {
+    try {
+      const userId = req.userId;
+      const messageId = req.params.messageId;
+      
+      // Get message info
+      const messageInfo = await this.chatRepository.getMessageInfo(messageId);
+      
+      if (!messageInfo) {
+        return res.status(404).json({ message: 'Message not found' });
+      }
+  
+      // Verify the user is the sender
+      if (messageInfo.senderId.toString() !== userId) {
+        return res.status(403).json({ message: 'Unauthorized to delete this message' });
+      }
+  
+      // Soft delete the message
+      await this.chatRepository.softDeleteMessage(messageId);
+      
+      // Notify both users about the deleted message
+      SocketService.notifyMessageDeletion(messageInfo.receiverId.toString(), messageId);
+      SocketService.notifyMessageDeletion(messageInfo.senderId.toString(), messageId);
+  
+      res.status(200).json({ message: 'Message deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      res.status(500).json({ message: 'Failed to delete message' });
+    }
+  }
 }

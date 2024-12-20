@@ -166,5 +166,23 @@ export class ChatRepository {
 
     return chat;
   }
+
+  async getMessageInfo(messageId: string) {
+    const message = await Message.findById(messageId)
+      .select('sender receiver')
+      .lean();
+    
+    if (!message) return null;
+    
+    return {
+      senderId: message.sender,
+      receiverId: message.receiver
+    };
+  }
+
+  async softDeleteMessage(messageId: string) {
+    // Update the message to mark it as deleted
+    await Message.findByIdAndUpdate(messageId, { isDeleted: true });
+  }
   
 }

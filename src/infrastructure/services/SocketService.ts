@@ -28,4 +28,10 @@ export class SocketService {
     const socketManager = SocketManager.getInstance();
     return socketManager.getOnlineUsers();
   }
+
+  static notifyMessageDeletion(userId: string, messageId: string) {
+    const socketManager = SocketManager.getInstance();
+    socketManager.emitToUser(userId, 'message_deleted', messageId);
+  }
+
 }

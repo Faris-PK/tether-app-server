@@ -13,9 +13,8 @@ chatRouter.get('/contacts', (req, res) => chatController.getContacts(req, res));
 chatRouter.get('/messages/:contactId', (req, res) => chatController.getMessages(req, res));
 chatRouter.post('/send', (req, res) => chatController.sendMessage(req, res));
 chatRouter.post('/read', (req, res) => chatController.markMessagesAsRead(req, res));
-
 chatRouter.get('/search', (req, res) => chatController.searchUsers(req, res));
 chatRouter.post('/start-chat', (req, res) => chatController.startNewChat(req, res));
-
+chatRouter.patch('/message/delete/:messageId', (req, res) =>  chatController.deleteMessage(req, res));
 
 export default chatRouter;
