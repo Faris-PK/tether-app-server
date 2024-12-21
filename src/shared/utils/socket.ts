@@ -11,7 +11,7 @@ interface VideoCallPayload {
 class SocketManager {
   private static instance: SocketManager;
   public io: Server | null = null;
-  private connectedUsers: Map<string, string> = new Map(); 
+  private connectedUsers: Map<string, string> = new Map();
   private rooms: Map<string, string[]> = new Map();
   private lastActivityTimestamp: Map<string, number> = new Map();
 
@@ -36,7 +36,7 @@ class SocketManager {
     });
 
     this.setupSocketEvents();
-    
+
     // Periodic cleanup of inactive users
     this.startUserActivityCheck();
 
@@ -105,7 +105,7 @@ class SocketManager {
     // Join Video Call Room
     socket.on('join_video_room', (roomId: string) => {
       socket.join(roomId);
-      
+
       const roomUsers = this.rooms.get(roomId) || [];
       if (!roomUsers.includes(userId)) {
         roomUsers.push(userId);
@@ -139,10 +139,41 @@ class SocketManager {
       }
     });
 
-    // Decline Video Call
+    // Handle call ending
+    socket.on('end_call', (payload: { roomId: string }) => {
+      // Notify all users in the room that the call has ended
+      this.io?.to(payload.roomId).emit('call_ended');
+
+      // Get room users
+      const roomUsers = this.rooms.get(payload.roomId) || [];
+
+      // Remove all users from the room
+      roomUsers.forEach(user => {
+        const userSocketId = this.getSocketId(user);
+        if (userSocketId) {
+          this.io?.sockets.sockets.get(userSocketId)?.leave(payload.roomId);
+        }
+      });
+
+      // Clear the room
+      this.rooms.delete(payload.roomId);
+    });
+
+    // Handle call declining
     socket.on('decline_video_call', (payload: { roomId: string }) => {
-      // Broadcast decline to all participants in the room
-      this.io?.to(payload.roomId).emit('video_call_declined', payload);
+      // Notify all users in the room that the call was declined
+      this.io?.to(payload.roomId).emit('video_call_declined');
+
+      // Clean up room similar to end_call
+      const roomUsers = this.rooms.get(payload.roomId) || [];
+      roomUsers.forEach(user => {
+        const userSocketId = this.getSocketId(user);
+        if (userSocketId) {
+          this.io?.sockets.sockets.get(userSocketId)?.leave(payload.roomId);
+        }
+      });
+
+      this.rooms.delete(payload.roomId);
     });
 
     // WebRTC Signaling Events
