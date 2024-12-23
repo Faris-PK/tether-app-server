@@ -47,8 +47,26 @@ export class AdminController {
       const { email, password } = req.body;
       const { accessToken, refreshToken, admin } = await this.adminLoginUseCase.execute({ email, password });
 
-      res.cookie('adminAccessToken', accessToken, { httpOnly: true, maxAge: 15 * 60 * 1000 });
-      res.cookie('adminRefreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+      res.cookie('adminAccessToken', accessToken, { 
+        httpOnly: true, 
+        maxAge: 15 * 60 * 1000, // 15 minutes
+        sameSite: 'none', 
+        secure: true,     
+        path: '/'
+      });
+      
+      res.cookie('adminRefreshToken', refreshToken, { 
+        httpOnly: true, 
+        maxAge: 7 * 24 * 60 * 60 * 1000, 
+        sameSite: 'none', 
+        secure: true,
+        path: '/'
+      });
+
+     // res.cookie('adminAccessToken', accessToken, { httpOnly: true, maxAge: 15 * 60 * 1000 });
+     // res.cookie('adminRefreshToken', refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 });
+
+      
 
       return res.status(200).json({ message: 'Admin login successful', admin });
     } catch (error) {

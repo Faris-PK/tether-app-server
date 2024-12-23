@@ -79,18 +79,17 @@ export class AuthController {
       const { email, password } = req.body;
       const { accessToken, refreshToken, user } = await this.loginUserUseCase.execute({ email, password });
     
-      // Updated cookie settings for cross-site and secure environments
       res.cookie('accessToken', accessToken, { 
         httpOnly: true, 
         maxAge: 15 * 60 * 1000, // 15 minutes
-        sameSite: 'none', // Important for cross-site cookies
-        secure: true,     // Required when using sameSite: 'none'
+        sameSite: 'none', 
+        secure: true,     
         path: '/'
       });
       
       res.cookie('refreshToken', refreshToken, { 
         httpOnly: true, 
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+        maxAge: 7 * 24 * 60 * 60 * 1000, 
         sameSite: 'none', 
         secure: true,
         path: '/'
