@@ -5,6 +5,7 @@ import connectDB from '../src/infrastructure/db/mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
+import errorHandler from './presentation/middleware/errorHandler';
 
 import authRoutes from '../src/presentation/routes/AuthRoutes';
 import adminRoutes from '../src/presentation/routes/AdminRoute';
@@ -35,6 +36,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
 
+
 // Routes
 app.use('/auth', authRoutes);
 app.use('/admin', adminRoutes);
@@ -44,6 +46,8 @@ app.use('/market', productRouter);
 app.use('/story', storyRouter);
 app.use('/livestream', liveStreamRouter);
 app.use('/chat', chatRoutes);
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
