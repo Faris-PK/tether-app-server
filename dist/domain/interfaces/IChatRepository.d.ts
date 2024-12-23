@@ -1,7 +1,11 @@
-import { IMessage, IChat } from '../../domain/entities/ChatMessage';
+import { IChat, IMessage } from "../entities/ChatMessage";
 export interface IChatRepository {
-    createMessage(senderId: string, receiverId: string, messageText: string): Promise<IMessage>;
-    getConversationsForUser(userId: string): Promise<IChat[]>;
-    getMessagesBetweenUsers(userId: string, contactId: string): Promise<IMessage[]>;
-    markMessagesAsRead(senderId: string, receiverId: string): Promise<void>;
+    findOrCreateChat(userId: string, contactId: string): Promise<IChat>;
+    getContacts(userId: string): Promise<any[]>;
+    getMessages(userId: string, contactId: string): Promise<IMessage[]>;
+    sendMessage(senderId: string, receiverId: string, messageText?: string, file?: Express.Multer.File, replyToMessageId?: string): Promise<IMessage>;
+    markMessagesAsRead(userId: string, contactId: string): Promise<void>;
+    searchUsers(userId: string, query: string): Promise<any[]>;
+    getMessageInfo(messageId: string): Promise<any>;
+    softDeleteMessage(messageId: string): Promise<void>;
 }

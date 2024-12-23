@@ -15,18 +15,9 @@ export class SocketService {
     });
   }
 
-  static broadcastNotification(notification: INotification) {
-    const socketManager = SocketManager.getInstance();
-    socketManager.broadcast('new_notification', notification);
-  }
-
   static sendLiveMessage(receiverId: string, message: IMessage) {
     const socketManager = SocketManager.getInstance();
     socketManager.emitToUser(receiverId, 'new_message', message);
-  }
-  static getOnlineUsers(): string[] {
-    const socketManager = SocketManager.getInstance();
-    return socketManager.getOnlineUsers();
   }
 
   static notifyMessageDeletion(userId: string, messageId: string) {
@@ -34,4 +25,13 @@ export class SocketService {
     socketManager.emitToUser(userId, 'message_deleted', messageId);
   }
 
+  static getOnlineUsers(): string[] {
+    const socketManager = SocketManager.getInstance();
+    return socketManager.getOnlineUsers();
+  }
+
+  static isUserOnline(userId: string): boolean {
+    const socketManager = SocketManager.getInstance();
+    return socketManager.isUserOnline(userId);
+  }
 }

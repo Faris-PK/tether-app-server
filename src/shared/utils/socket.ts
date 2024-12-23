@@ -17,7 +17,6 @@ class SocketManager {
 
   private constructor() {}
 
-  // Singleton pattern
   static getInstance(): SocketManager {
     if (!SocketManager.instance) {
       SocketManager.instance = new SocketManager();
@@ -25,7 +24,6 @@ class SocketManager {
     return SocketManager.instance;
   }
 
-  // Initialize socket server
   initialize(server: HttpServer): Server {
     this.io = new Server(server, {
       cors: {
@@ -36,14 +34,10 @@ class SocketManager {
     });
 
     this.setupSocketEvents();
-
-    // Periodic cleanup of inactive users
     this.startUserActivityCheck();
-
     return this.io;
   }
 
-  // Periodic check to remove inactive users
   private startUserActivityCheck() {
     setInterval(() => {
       const currentTime = Date.now();
@@ -55,57 +49,58 @@ class SocketManager {
           this.removeUser(userId);
         }
       });
-    }, 60 * 1000); // Check every minute
+    }, 60 * 1000);
   }
 
-  // Remove user from connected users
   private removeUser(userId: string) {
     if (this.connectedUsers.has(userId)) {
+      const socketId = this.connectedUsers.get(userId);
       this.connectedUsers.delete(userId);
       this.lastActivityTimestamp.delete(userId);
       this.broadcastUserStatus(userId, false);
+      
+      // Clean up user from all rooms
+      this.rooms.forEach((users, roomId) => {
+        if (users.includes(userId)) {
+          this.rooms.set(roomId, users.filter(id => id !== userId));
+        }
+      });
     }
   }
 
-  // Set up socket connection events
   private setupSocketEvents() {
     if (!this.io) return;
 
     this.io.on('connection', (socket: Socket) => {
       const userId = socket.handshake.query.userId as string;
+      if (!userId) return;
 
-      if (userId) {
-        // Store user's socket connection
-        this.connectedUsers.set(userId, socket.id);
+      // Store user's socket connection
+      this.connectedUsers.set(userId, socket.id);
+      this.lastActivityTimestamp.set(userId, Date.now());
+      this.broadcastUserStatus(userId, true);
+
+      // Emit current online users to the newly connected client
+      socket.emit('getOnlineUsers', Array.from(this.connectedUsers.keys()));
+
+      // User activity tracking
+      socket.on('user_activity', () => {
         this.lastActivityTimestamp.set(userId, Date.now());
+      });
 
-        // Broadcast user online status
-        this.broadcastUserStatus(userId, true);
+      // Video Call Events
+      this.setupVideoCallEvents(socket, userId);
 
-        // User activity tracking
-        socket.on('user_activity', () => {
-          this.lastActivityTimestamp.set(userId, Date.now());
-        });
-
-        // Video Call Signaling Events
-        this.setupVideoCallEvents(socket, userId);
-
-        // Handle disconnection
-        socket.on('disconnect', () => {
-          this.removeUser(userId);
-        });
-
-        // Emit current online users to the newly connected client
-        socket.emit('getOnlineUsers', Array.from(this.connectedUsers.keys()));
-      }
+      // Handle disconnection
+      socket.on('disconnect', () => {
+        this.removeUser(userId);
+      });
     });
   }
 
   private setupVideoCallEvents(socket: Socket, userId: string) {
-    // Join Video Call Room
     socket.on('join_video_room', (roomId: string) => {
       socket.join(roomId);
-
       const roomUsers = this.rooms.get(roomId) || [];
       if (!roomUsers.includes(userId)) {
         roomUsers.push(userId);
@@ -113,23 +108,16 @@ class SocketManager {
       }
 
       const otherUsers = roomUsers.filter(user => user !== userId);
-      if (otherUsers.length > 0) {
-        socket.emit('other_users_in_room', otherUsers);
-        otherUsers.forEach(otherUser => {
-          const otherSocketId = this.getSocketId(otherUser);
-          if (otherSocketId) {
-            socket.to(otherSocketId).emit('new_user_joined', userId);
-          }
-        });
-      }
+      socket.emit('other_users_in_room', otherUsers);
+      otherUsers.forEach(otherUser => {
+        const otherSocketId = this.getSocketId(otherUser);
+        if (otherSocketId) {
+          socket.to(otherSocketId).emit('new_user_joined', userId);
+        }
+      });
     });
 
-    // Initiate Video Call
-    socket.on('initiate_video_call', (payload: { 
-      target: string, 
-      roomId: string, 
-      caller: string 
-    }) => {
+    socket.on('initiate_video_call', (payload: { target: string, roomId: string, caller: string }) => {
       const targetSocketId = this.getSocketId(payload.target);
       if (targetSocketId) {
         this.io?.to(targetSocketId).emit('incoming_video_call', {
@@ -139,84 +127,48 @@ class SocketManager {
       }
     });
 
-    // Handle call ending
     socket.on('end_call', (payload: { roomId: string }) => {
-      // Notify all users in the room that the call has ended
       this.io?.to(payload.roomId).emit('call_ended');
-
-      // Get room users
       const roomUsers = this.rooms.get(payload.roomId) || [];
-
-      // Remove all users from the room
       roomUsers.forEach(user => {
         const userSocketId = this.getSocketId(user);
         if (userSocketId) {
           this.io?.sockets.sockets.get(userSocketId)?.leave(payload.roomId);
         }
       });
-
-      // Clear the room
       this.rooms.delete(payload.roomId);
     });
 
-    // Handle call declining
     socket.on('decline_video_call', (payload: { roomId: string }) => {
-      // Notify all users in the room that the call was declined
       this.io?.to(payload.roomId).emit('video_call_declined');
-
-      // Clean up room similar to end_call
-      const roomUsers = this.rooms.get(payload.roomId) || [];
-      roomUsers.forEach(user => {
-        const userSocketId = this.getSocketId(user);
-        if (userSocketId) {
-          this.io?.sockets.sockets.get(userSocketId)?.leave(payload.roomId);
-        }
-      });
-
       this.rooms.delete(payload.roomId);
     });
 
-    // WebRTC Signaling Events
-    socket.on('offer', (payload: VideoCallPayload) => {
-      const targetSocketId = this.getSocketId(payload.target);
-      if (targetSocketId) {
-        this.io?.to(targetSocketId).emit('offer', payload);
-      }
-    });
-
-    socket.on('answer', (payload: VideoCallPayload) => {
-      const targetSocketId = this.getSocketId(payload.target);
-      if (targetSocketId) {
-        this.io?.to(targetSocketId).emit('answer', payload);
-      }
-    });
-
-    socket.on('ice-candidate', (payload: VideoCallPayload) => {
-      const targetSocketId = this.getSocketId(payload.target);
-      if (targetSocketId) {
-        this.io?.to(targetSocketId).emit('ice-candidate', payload);
-      }
+    // WebRTC Signaling
+    ['offer', 'answer', 'ice-candidate'].forEach(event => {
+      socket.on(event, (payload: VideoCallPayload) => {
+        const targetSocketId = this.getSocketId(payload.target);
+        if (targetSocketId) {
+          this.io?.to(targetSocketId).emit(event, payload);
+        }
+      });
     });
   }
 
-  // Broadcast user online/offline status
   private broadcastUserStatus(userId: string, isOnline: boolean) {
     if (this.io) {
       this.io.emit('user_status_change', { userId, isOnline });
     }
   }
 
-  // Get socket ID for a specific user
   getSocketId(userId: string): string | undefined {
     return this.connectedUsers.get(userId);
   }
 
-  // Check if user is online
   isUserOnline(userId: string): boolean {
     return this.connectedUsers.has(userId);
   }
 
-  // Send event to a specific user
   emitToUser(userId: string, event: string, data: any) {
     const socketId = this.getSocketId(userId);
     if (socketId && this.io) {
@@ -224,14 +176,12 @@ class SocketManager {
     }
   }
 
-  // Broadcast event to all connected users
   broadcast(event: string, data: any) {
     if (this.io) {
       this.io.emit(event, data);
     }
   }
 
-  // Get all online users
   getOnlineUsers(): string[] {
     return Array.from(this.connectedUsers.keys());
   }

@@ -1,18 +1,37 @@
 import { Request, Response } from 'express';
-import { ChatRepository } from '../../infrastructure/repositories/ChatRepository';
+import { GetContactsUseCase } from '../../application/useCases/chat/GetContactsUseCase';
+import { GetMessagesUseCase } from '../../application/useCases/chat/GetMessagesUseCase';
+import { SendMessageUseCase } from '../../application/useCases/chat/SendMessageUseCase';
+import { MarkMessagesAsReadUseCase } from '../../application/useCases/chat/MarkMessagesAsReadUseCase';
+import { SearchUsersUseCase } from '../../application/useCases/chat/SearchUsersUseCase';
+import { StartNewChatUseCase } from '../../application/useCases/chat/StartNewChatUseCase';
+import { DeleteMessageUseCase } from '../../application/useCases/chat/DeleteMessageUseCase';
+import { IChatRepository } from '../../domain/interfaces/IChatRepository';
 import { SocketService } from '../../infrastructure/services/SocketService';
 
 export class ChatController {
-  private chatRepository: ChatRepository;
+  private getContactsUseCase: GetContactsUseCase;
+  private getMessagesUseCase: GetMessagesUseCase;
+  private sendMessageUseCase: SendMessageUseCase;
+  private markMessagesAsReadUseCase: MarkMessagesAsReadUseCase;
+  private searchUsersUseCase: SearchUsersUseCase;
+  private startNewChatUseCase: StartNewChatUseCase;
+  private deleteMessageUseCase: DeleteMessageUseCase;
 
-  constructor(chatRepository: ChatRepository) {
-    this.chatRepository = chatRepository;
+  constructor(chatRepository: IChatRepository) {
+    this.getContactsUseCase = new GetContactsUseCase(chatRepository);
+    this.getMessagesUseCase = new GetMessagesUseCase(chatRepository);
+    this.sendMessageUseCase = new SendMessageUseCase(chatRepository);
+    this.markMessagesAsReadUseCase = new MarkMessagesAsReadUseCase(chatRepository);
+    this.searchUsersUseCase = new SearchUsersUseCase(chatRepository);
+    this.startNewChatUseCase = new StartNewChatUseCase(chatRepository);
+    this.deleteMessageUseCase = new DeleteMessageUseCase(chatRepository);
   }
 
   async getContacts(req: Request, res: Response) {
     try {
       const userId = req.userId;
-      const contacts = await this.chatRepository.getContacts(userId??'');
+      const contacts = await this.getContactsUseCase.execute(userId ?? '');
       res.json(contacts);
     } catch (error) {
       console.error('Error fetching contacts:', error);
@@ -24,7 +43,7 @@ export class ChatController {
     try {
       const userId = req.userId;
       const contactId = req.params.contactId;
-      const messages = await this.chatRepository.getMessages(userId??'', contactId);
+      const messages = await this.getMessagesUseCase.execute(userId ?? '', contactId);
       res.json(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -35,18 +54,18 @@ export class ChatController {
   async sendMessage(req: Request, res: Response) {
     try {
       const senderId = req.userId;
-      const { contactId, message } = req.body;
-      
-      // Send message using repository
-      const newMessage = await this.chatRepository.sendMessage(
-        senderId??'', 
-        contactId, 
-        message
+      const { contactId, message, replyToMessageId } = req.body;
+      const file = req.file;
+  
+      const newMessage = await this.sendMessageUseCase.execute(
+        senderId ?? '',
+        contactId,
+        message,
+        file,
+        replyToMessageId
       );
-
-      // Use SocketService to send live message
+  
       SocketService.sendLiveMessage(contactId, newMessage);
-
       res.json(newMessage);
     } catch (error) {
       console.error('Error sending message:', error);
@@ -59,9 +78,7 @@ export class ChatController {
       const userId = req.userId;
       const { contactId } = req.body;
       
-      // Mark messages as read in the repository
-      await this.chatRepository.markMessagesAsRead(userId??'', contactId);
-
+      await this.markMessagesAsReadUseCase.execute(userId ?? '', contactId);
       res.status(200).json({ message: 'Messages marked as read' });
     } catch (error) {
       console.error('Error marking messages as read:', error);
@@ -73,12 +90,8 @@ export class ChatController {
     try {
       const userId = req.userId;
       const query = req.query.query?.toString();
-
-      if (!query) {
-        return res.status(400).json({ message: 'Query parameter is required' });
-      }
       
-      const users = await this.chatRepository.searchUsers(userId??'', query);
+      const users = await this.searchUsersUseCase.execute(userId ?? '', query ?? '');
       res.json(users);
     } catch (error) {
       console.error('Error searching users:', error);
@@ -90,11 +103,8 @@ export class ChatController {
     try {
       const userId = req.userId;
       const { userId: contactId } = req.body;
-      if (!contactId) {
-        return res.status(400).json({ message: 'Contact ID is required' });
-      }
       
-      const newChat = await this.chatRepository.startNewChat(userId??'', contactId);
+      const newChat = await this.startNewChatUseCase.execute(userId ?? '', contactId);
       res.json(newChat);
     } catch (error) {
       console.error('Error starting new chat:', error);
@@ -107,25 +117,11 @@ export class ChatController {
       const userId = req.userId;
       const messageId = req.params.messageId;
       
-      // Get message info
-      const messageInfo = await this.chatRepository.getMessageInfo(messageId);
+      const messageInfo = await this.deleteMessageUseCase.execute(userId ?? '', messageId);
       
-      if (!messageInfo) {
-        return res.status(404).json({ message: 'Message not found' });
-      }
-  
-      // Verify the user is the sender
-      if (messageInfo.senderId.toString() !== userId) {
-        return res.status(403).json({ message: 'Unauthorized to delete this message' });
-      }
-  
-      // Soft delete the message
-      await this.chatRepository.softDeleteMessage(messageId);
-      
-      // Notify both users about the deleted message
       SocketService.notifyMessageDeletion(messageInfo.receiverId.toString(), messageId);
       SocketService.notifyMessageDeletion(messageInfo.senderId.toString(), messageId);
-  
+      
       res.status(200).json({ message: 'Message deleted successfully' });
     } catch (error) {
       console.error('Error deleting message:', error);

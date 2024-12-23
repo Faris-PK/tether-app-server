@@ -16,13 +16,21 @@ class SocketService {
             socketManager.emitToUser(userId, 'new_notification', notification);
         });
     }
-    static broadcastNotification(notification) {
-        const socketManager = socket_1.default.getInstance();
-        socketManager.broadcast('new_notification', notification);
-    }
     static sendLiveMessage(receiverId, message) {
         const socketManager = socket_1.default.getInstance();
         socketManager.emitToUser(receiverId, 'new_message', message);
+    }
+    static notifyMessageDeletion(userId, messageId) {
+        const socketManager = socket_1.default.getInstance();
+        socketManager.emitToUser(userId, 'message_deleted', messageId);
+    }
+    static getOnlineUsers() {
+        const socketManager = socket_1.default.getInstance();
+        return socketManager.getOnlineUsers();
+    }
+    static isUserOnline(userId) {
+        const socketManager = socket_1.default.getInstance();
+        return socketManager.isUserOnline(userId);
     }
 }
 exports.SocketService = SocketService;

@@ -2,8 +2,12 @@ import mongoose, { Document, Types } from 'mongoose';
 export interface IMessage extends Document {
     sender: Types.ObjectId;
     receiver: Types.ObjectId;
-    text: string;
+    text?: string;
+    fileUrl?: string;
+    fileType?: 'image' | 'video';
     read: boolean;
+    isDeleted: boolean;
+    replyTo: Types.ObjectId;
 }
 export interface IChat extends Document {
     participants: Types.ObjectId[];

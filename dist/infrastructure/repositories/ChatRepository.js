@@ -4,7 +4,11 @@ exports.ChatRepository = void 0;
 const mongoose_1 = require("mongoose");
 const ChatMessage_1 = require("../../domain/entities/ChatMessage");
 const User_1 = require("../../domain/entities/User");
+const S3Service_1 = require("../services/S3Service");
 class ChatRepository {
+    constructor() {
+        this.s3Service = new S3Service_1.S3Service();
+    }
     async findOrCreateChat(userId, contactId) {
         const userObjectId = new mongoose_1.Types.ObjectId(userId);
         const contactObjectId = new mongoose_1.Types.ObjectId(contactId);
@@ -61,24 +65,36 @@ class ChatRepository {
         }).populate('sender', 'username profile_picture');
         return messages;
     }
-    async sendMessage(senderId, receiverId, messageText) {
+    async sendMessage(senderId, receiverId, messageText, file, replyToMessageId) {
         const senderObjectId = new mongoose_1.Types.ObjectId(senderId);
         const receiverObjectId = new mongoose_1.Types.ObjectId(receiverId);
-        // Find or create chat
         let chat = await this.findOrCreateChat(senderId, receiverId);
-        // Create new message
-        const newMessage = new ChatMessage_1.Message({
+        let fileUrl;
+        let fileType;
+        if (file) {
+            const fileUpload = await this.s3Service.uploadFile(file, 'chat-files');
+            fileUrl = fileUpload.Location;
+            fileType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+        }
+        const messageData = {
             sender: senderObjectId,
             receiver: receiverObjectId,
             text: messageText,
+            fileUrl,
+            fileType,
             read: false
-        });
+        };
+        if (replyToMessageId) {
+            messageData.replyTo = new mongoose_1.Types.ObjectId(replyToMessageId);
+        }
+        const newMessage = new ChatMessage_1.Message(messageData);
         await newMessage.save();
-        // Add message to chat
         chat.messages.push(newMessage.id);
         await chat.save();
-        // Populate sender details
-        await newMessage.populate('sender', 'username profile_picture');
+        await newMessage.populate([
+            { path: 'sender', select: 'username profile_picture' },
+            { path: 'replyTo', populate: { path: 'sender', select: 'username' } }
+        ]);
         return newMessage;
     }
     async markMessagesAsRead(userId, contactId) {
@@ -95,16 +111,14 @@ class ChatRepository {
         if (!query || query.trim() === "") {
             throw new Error("Search query cannot be empty");
         }
-        const regexQuery = new RegExp(query, "i"); // Case-insensitive regex
-        // Ensure the search fields (e.g., `username` and `name`) exist in the schema
+        const regexQuery = new RegExp(query, "i");
         const users = await User_1.User.find({
             $or: [
                 { username: { $regex: regexQuery } },
-                { email: { $regex: regexQuery } } // Replace with `name` if required
+                { email: { $regex: regexQuery } }
             ],
-            _id: { $ne: userObjectId } // Exclude the current user
+            _id: { $ne: userObjectId }
         }).select("username profile_picture bio");
-        // Return mapped results
         return users.map(user => ({
             id: user._id,
             username: user.username,
@@ -126,6 +140,30 @@ class ChatRepository {
             await chat.save();
         }
         return chat;
+    }
+    async getMessageInfo(messageId) {
+        const message = await ChatMessage_1.Message.findById(messageId)
+            .select('sender receiver fileUrl')
+            .lean();
+        if (!message)
+            return null;
+        return {
+            senderId: message.sender,
+            receiverId: message.receiver,
+            fileUrl: message.fileUrl
+        };
+    }
+    async softDeleteMessage(messageId) {
+        const message = await ChatMessage_1.Message.findById(messageId);
+        if (!message)
+            return;
+        // If message has a file, delete it from S3
+        if (message.fileUrl) {
+            await this.s3Service.deleteFile(message.fileUrl);
+        }
+        // Mark message as deleted
+        message.isDeleted = true;
+        await message.save();
     }
 }
 exports.ChatRepository = ChatRepository;

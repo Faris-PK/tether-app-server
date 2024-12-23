@@ -17,7 +17,6 @@ import chatRoutes from '../src/presentation/routes/ChatRoutes';
 
 import SocketManager from './shared/utils/socket';
 
-
 dotenv.config();
 
 const app = express();
@@ -28,7 +27,10 @@ const socketManager = SocketManager.getInstance();
 socketManager.initialize(server);
 
 // Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
+app.use(cors({ 
+  origin: process.env.FRONTEND_URL, 
+  credentials: true 
+}));
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan('dev'));
@@ -42,8 +44,6 @@ app.use('/market', productRouter);
 app.use('/story', storyRouter);
 app.use('/livestream', liveStreamRouter);
 app.use('/chat', chatRoutes);
-
-;
 
 const PORT = process.env.PORT || 5000;
 

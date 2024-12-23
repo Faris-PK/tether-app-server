@@ -1,8 +1,16 @@
 import { Types } from 'mongoose';
 import { Chat, Message, IChat, IMessage } from '../../domain/entities/ChatMessage';
 import { User } from '../../domain/entities/User';
+import { S3Service } from '../services/S3Service';
+import { IChatRepository } from '../../domain/interfaces/IChatRepository';
 
-export class ChatRepository {
+export class ChatRepository implements IChatRepository {
+  private s3Service: S3Service;
+
+  constructor() {
+    this.s3Service = new S3Service();
+  }
+
   async findOrCreateChat(userId: string, contactId: string): Promise<IChat> {
     const userObjectId = new Types.ObjectId(userId);
     const contactObjectId = new Types.ObjectId(contactId);
@@ -24,7 +32,7 @@ export class ChatRepository {
 
   async getContacts(userId: string): Promise<any[]> {
     const userObjectId = new Types.ObjectId(userId);
-  
+
     const chats = await Chat.find({ 
       participants: userObjectId 
     }).populate({
@@ -32,18 +40,18 @@ export class ChatRepository {
       match: { _id: { $ne: userObjectId } },
       select: 'username profile_picture bio'
     });
-  
+
     const contacts = await Promise.all(chats.map(async (chat: any) => {
       const contact = chat.participants[0];
       
       if (!contact) return null;
-  
+
       const lastMessage = await Message.findOne({
         _id: { $in: chat.messages }
       })
       .sort({ createdAt: -1 })
       .limit(1);
-  
+
       return {
         id: contact._id,
         username: contact.username,
@@ -76,29 +84,47 @@ export class ChatRepository {
   async sendMessage(
     senderId: string, 
     receiverId: string, 
-    messageText: string
+    messageText?: string,
+    file?: Express.Multer.File,
+    replyToMessageId?: string
   ): Promise<IMessage> {
     const senderObjectId = new Types.ObjectId(senderId);
     const receiverObjectId = new Types.ObjectId(receiverId);
 
-    // Find or create chat
     let chat = await this.findOrCreateChat(senderId, receiverId);
 
-    // Create new message
-    const newMessage = new Message({
+    let fileUrl: string | undefined;
+    let fileType: 'image' | 'video' | undefined;
+
+    if (file) {
+      const fileUpload = await this.s3Service.uploadFile(file, 'chat-files');
+      fileUrl = fileUpload.Location;
+      fileType = file.mimetype.startsWith('image/') ? 'image' : 'video';
+    }
+
+    const messageData: any = {
       sender: senderObjectId,
       receiver: receiverObjectId,
       text: messageText,
+      fileUrl,
+      fileType,
       read: false
-    });
+    };
+
+    if (replyToMessageId) {
+      messageData.replyTo = new Types.ObjectId(replyToMessageId);
+    }
+
+    const newMessage = new Message(messageData);
     await newMessage.save();
 
-    // Add message to chat
     chat.messages.push(newMessage.id);
     await chat.save();
 
-    // Populate sender details
-    await newMessage.populate('sender', 'username profile_picture');
+    await newMessage.populate([
+      { path: 'sender', select: 'username profile_picture' },
+      { path: 'replyTo', populate: { path: 'sender', select: 'username' } }
+    ]);
 
     return newMessage;
   }
@@ -127,26 +153,23 @@ export class ChatRepository {
         throw new Error("Search query cannot be empty");
     }
 
-    const regexQuery = new RegExp(query, "i"); // Case-insensitive regex
+    const regexQuery = new RegExp(query, "i"); 
 
-    // Ensure the search fields (e.g., `username` and `name`) exist in the schema
     const users = await User.find({
         $or: [
             { username: { $regex: regexQuery } },
-            { email: { $regex: regexQuery } } // Replace with `name` if required
+            { email: { $regex: regexQuery } }
         ],
-        _id: { $ne: userObjectId } // Exclude the current user
+        _id: { $ne: userObjectId } 
     }).select("username profile_picture bio");
 
-    // Return mapped results
     return users.map(user => ({
         id: user._id,
         username: user.username,
         profile_picture: user.profile_picture,
         bio: user.bio
     }));
-}
-
+  }
 
   async startNewChat(userId: string, contactId: string): Promise<IChat> {
     const userObjectId = new Types.ObjectId(userId);
@@ -169,20 +192,29 @@ export class ChatRepository {
 
   async getMessageInfo(messageId: string) {
     const message = await Message.findById(messageId)
-      .select('sender receiver')
+      .select('sender receiver fileUrl')
       .lean();
     
     if (!message) return null;
     
     return {
       senderId: message.sender,
-      receiverId: message.receiver
+      receiverId: message.receiver,
+      fileUrl: message.fileUrl
     };
   }
 
   async softDeleteMessage(messageId: string) {
-    // Update the message to mark it as deleted
-    await Message.findByIdAndUpdate(messageId, { isDeleted: true });
+    const message = await Message.findById(messageId);
+    if (!message) return;
+
+    // If message has a file, delete it from S3
+    if (message.fileUrl) {
+      await this.s3Service.deleteFile(message.fileUrl);
+    }
+
+    // Mark message as deleted
+    message.isDeleted = true;
+    await message.save();
   }
-  
 }

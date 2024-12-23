@@ -5,9 +5,12 @@ declare class SocketManager {
     io: Server | null;
     private connectedUsers;
     private rooms;
+    private lastActivityTimestamp;
     private constructor();
     static getInstance(): SocketManager;
     initialize(server: HttpServer): Server;
+    private startUserActivityCheck;
+    private removeUser;
     private setupSocketEvents;
     private setupVideoCallEvents;
     private broadcastUserStatus;
@@ -15,5 +18,6 @@ declare class SocketManager {
     isUserOnline(userId: string): boolean;
     emitToUser(userId: string, event: string, data: any): void;
     broadcast(event: string, data: any): void;
+    getOnlineUsers(): string[];
 }
 export default SocketManager;

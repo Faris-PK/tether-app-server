@@ -9,6 +9,7 @@ const authMiddleware = (req, res, next) => {
     const accessToken = req.cookies.accessToken;
     const refreshToken = req.cookies.refreshToken;
     if (!accessToken && !refreshToken) {
+        console.log('No tokens provided');
         return res.status(401).json({ message: 'No tokens provided' });
     }
     try {

@@ -28,8 +28,12 @@ const mongoose_1 = __importStar(require("mongoose"));
 const MessageSchema = new mongoose_1.Schema({
     sender: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
     receiver: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User', required: true },
-    text: { type: String, required: true },
-    read: { type: Boolean, default: false }
+    text: { type: String },
+    fileUrl: { type: String },
+    fileType: { type: String, enum: ['image', 'video'] },
+    read: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    replyTo: { type: mongoose_1.default.Schema.Types.ObjectId, ref: 'Message' }
 }, { timestamps: true });
 const ChatSchema = new mongoose_1.Schema({
     participants: [{ type: mongoose_1.default.Schema.Types.ObjectId, ref: 'User' }],
