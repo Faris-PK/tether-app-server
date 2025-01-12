@@ -1,5 +1,7 @@
 import Stripe from 'stripe';
+import dotenv from 'dotenv';
 
+dotenv.config();
 export class StripeService {
   private stripe: Stripe;
 
