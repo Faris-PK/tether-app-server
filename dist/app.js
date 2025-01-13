@@ -11,6 +11,7 @@ const mongoose_1 = __importDefault(require("../src/infrastructure/db/mongoose"))
 const cors_1 = __importDefault(require("cors"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const morgan_1 = __importDefault(require("morgan"));
+const errorHandler_1 = __importDefault(require("./presentation/middleware/errorHandler"));
 const AuthRoutes_1 = __importDefault(require("../src/presentation/routes/AuthRoutes"));
 const AdminRoute_1 = __importDefault(require("../src/presentation/routes/AdminRoute"));
 const UserRoute_1 = __importDefault(require("../src/presentation/routes/UserRoute"));
@@ -44,6 +45,7 @@ app.use('/market', productRoutes_1.default);
 app.use('/story', storyRoutes_1.default);
 app.use('/livestream', LiveStreamRoutes_1.default);
 app.use('/chat', ChatRoutes_1.default);
+app.use(errorHandler_1.default);
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
     (0, mongoose_1.default)();
